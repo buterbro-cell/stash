@@ -1,0 +1,1699 @@
+<title>Stash NFT</title>
+<meta name="description" content="Tokenized NFTs on NEAR: a no-code collection builder with a body part generator, layer animation and tokens inside every NFT.">
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: dark app shell — icon rail on desktop, tab bar on phones; soft raised panels; champagne-gold is the one accent for actions and active state */
+:root{
+  --bg:#0E0E10; --bg2:#17171A; --bg3:#212125; --bg4:#2A2A2F; --line:rgba(255,255,255,.07);
+  --fg:#F4F2EE; --muted:#8F8D95; --gold1:#F6E6C6; --gold2:#E2C08E; --gold-text:#E8C896; --on-gold:#1A160F;
+  --ok:#3DDC97; --warn:#FF6E6E; --violet:#B7A2FF;
+  --grad:linear-gradient(100deg,var(--gold1) 0%,var(--gold2) 55%,#F1DDB6 100%);
+  --f-display:"Manrope","Onest",system-ui,sans-serif;
+  --f-body:"Manrope","Onest",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:22px; color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--bg)}
+body{color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--gold2);outline-offset:2px;border-radius:8px}
+h1,h2,h3{margin:0;text-wrap:balance}
+p{margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mono{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.svgi{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* rail + top + tabbar */
+.side{display:none}
+@media (min-width:900px){
+  .side{display:flex;flex-direction:column;align-items:center;gap:6px;position:fixed;left:0;top:0;bottom:0;width:84px;padding:calc(18px + env(safe-area-inset-top,0px)) 0 18px max(0px,env(safe-area-inset-left,0px));border-right:1px solid var(--line);background:var(--bg);z-index:25}
+  .shell{margin-left:84px}
+}
+.side .logo{flex-direction:column;gap:4px;font-size:10px;letter-spacing:.06em;margin-bottom:18px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;font-weight:800;font-size:18px;letter-spacing:-.01em;min-height:44px}
+.logo .mk{width:34px;height:34px;border-radius:11px;background:var(--grad);display:grid;place-items:center;color:var(--on-gold)}
+.logo .mk .svgi{width:18px;height:18px;stroke-width:2.2}
+.side .nav{display:flex;flex-direction:column;gap:4px}
+.side .nav a{width:64px;min-height:58px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-decoration:none;color:var(--muted);font-size:10.5px;font-weight:600;text-align:center;line-height:1.15}
+.side .nav a:hover{color:var(--fg);background:var(--bg2)}
+.side .nav a[aria-current="page"]{color:var(--gold-text);background:var(--bg2)}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(14px)}
+.top .wrap{display:flex;align-items:center;gap:12px;padding-block:12px}
+.top .logo{display:flex}
+@media (min-width:900px){ .top .logo{display:none} }
+.search{flex:1;display:flex;align-items:center;gap:10px;min-height:46px;padding:0 16px;border-radius:999px;background:var(--bg3);color:var(--muted);min-width:0}
+.search input{flex:1;min-width:0;border:0;background:none;outline:none;color:var(--fg);font-size:15px}
+.search input::placeholder{color:var(--muted)}
+.search:focus-within{box-shadow:0 0 0 2px var(--gold2)}
+@media (max-width:620px){ .top .search{display:none} }
+.wallet{display:flex;align-items:center;gap:8px;font-size:14px}
+.lang{display:inline-flex;gap:2px;padding:4px;border-radius:999px;background:var(--bg3);margin-left:auto;flex:none}
+.lang button{min-width:42px;min-height:36px;border:0;border-radius:999px;background:none;color:var(--muted);font-weight:800;font-size:13px;letter-spacing:.04em;cursor:pointer}
+.lang button:hover{color:var(--fg)}
+.wallet .btn{white-space:nowrap}
+@media (max-width:440px){ .top .lt{display:none} .wallet .btn-main{padding-inline:14px} }
+.lang button[aria-pressed="true"]{background:var(--grad);color:var(--on-gold)}
+.wpill{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:999px;background:var(--bg3);font-weight:700}
+.wpill .svgi{color:var(--fg)}
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:25;display:grid;grid-template-columns:repeat(6,1fr);background:var(--bg2);border-top:1px solid var(--line);padding:6px max(6px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px))}
+.tabbar a{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;text-decoration:none;color:var(--muted);font-size:10.5px;font-weight:600;min-width:0}
+.tabbar a .svgi{width:22px;height:22px}
+.tabbar a[aria-current="page"]{color:var(--gold-text)}
+@media (min-width:900px){ .tabbar{display:none} }
+@media (max-width:899px){ body{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))} .toast{bottom:calc(84px + env(safe-area-inset-bottom,0px))!important} }
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:10px 20px;border-radius:14px;border:1px solid transparent;font-weight:700;font-size:15px;cursor:pointer;text-decoration:none;background:var(--bg3);color:var(--fg);transition:filter .15s ease,transform .15s ease,border-color .15s ease}
+.btn:hover{filter:brightness(1.12)}
+.btn:active{transform:scale(.98)}
+.btn-main{background:var(--grad);color:var(--on-gold)}
+.btn-line{background:transparent;border-color:color-mix(in srgb,var(--gold2) 60%,transparent);color:var(--gold-text)}
+.btn-sm{min-height:40px;padding:7px 14px;font-size:14px;border-radius:12px}
+.btn-icon{min-height:38px;min-width:38px;padding:0;border-radius:12px;background:var(--bg3);border:0}
+.btn[disabled]{opacity:.4;cursor:not-allowed;filter:none;transform:none}
+
+.banner{font-size:12.5px;color:var(--muted)}
+.banner .wrap{padding-block:2px 6px}
+main{padding-block:20px 80px}
+.sec{padding-block:44px}
+.sec:first-child{padding-top:0}
+.label{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.d-xl{font-weight:800;font-size:clamp(32px,4.8vw,58px);line-height:1.04;letter-spacing:-.03em}
+.d-l{font-weight:800;font-size:clamp(26px,3.2vw,38px);line-height:1.1;letter-spacing:-.025em}
+.d-m{font-weight:700;font-size:19px;line-height:1.3;letter-spacing:-.01em}
+.lead{font-size:17px;color:var(--muted);max-width:60ch}
+.prose{display:flex;flex-direction:column;gap:14px;max-width:66ch}
+.prose p{color:var(--muted)}
+.prose b{color:var(--fg);font-weight:700}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.split{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+.split>.a{flex:1 1 420px;min-width:0;display:flex;flex-direction:column;gap:22px}
+.split>.b{flex:1 1 340px;min-width:0;display:flex;flex-direction:column;gap:18px}
+@media (min-width:920px){ .stick{position:sticky;top:84px} }
+
+/* slides */
+.slides{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:none}
+.slides::-webkit-scrollbar{display:none}
+.slide{flex:0 0 min(100%,880px);scroll-snap-align:start;border-radius:26px;overflow:hidden;position:relative;min-height:300px;display:flex;flex-direction:column;justify-content:flex-end;gap:14px;padding:24px;text-decoration:none}
+.slide.dark{background:var(--bg2)}
+.slide.gold{background:var(--grad);color:var(--on-gold)}
+.slide.green{background:linear-gradient(120deg,#0F2A22,#16392E 60%,#0F241D)}
+.slide .strip{position:absolute;inset:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));align-content:start;gap:0}
+.slide .strip .art{border-radius:0}
+.slide .shade{position:absolute;inset:0;background:linear-gradient(0deg,rgba(14,14,16,.92) 0%,rgba(14,14,16,.35) 55%,rgba(14,14,16,0) 100%)}
+.slide>*:not(.strip):not(.shade):not(.deco){position:relative}
+.slide .deco{position:absolute;inset:0;pointer-events:none}
+.slide.gold .deco{background:repeating-linear-gradient(115deg,transparent 0 120px,rgba(26,22,15,.08) 120px 121px)}
+.slide.gold .lead{color:rgba(26,22,15,.72)}
+.slide.green .lead{color:#A9C9BC}
+.glass{display:inline-flex;flex-wrap:wrap;gap:0;border-radius:16px;background:rgba(20,20,22,.55);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.12);align-self:flex-start}
+.glass div{padding:10px 16px;display:flex;flex-direction:column;gap:2px}
+.glass div+div{border-left:1px solid rgba(255,255,255,.12)}
+.glass span{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#B9B6BE}
+.glass b{font-size:15px}
+.dots{display:flex;justify-content:center;gap:8px;margin-top:12px}
+.dots i{width:44px;height:4px;border-radius:9px;background:var(--bg4)}
+.dots i.on{background:var(--gold2)}
+
+/* art + cards */
+.art{position:relative;aspect-ratio:1/1;max-width:100%;border-radius:16px;overflow:hidden;background:var(--bg3)}
+.art canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.art .num{position:absolute;left:8px;top:8px;font-size:11px;font-weight:700;background:rgba(14,14,16,.7);color:#F4F2EE;border-radius:999px;padding:3px 9px;backdrop-filter:blur(6px)}
+.art .flag{position:absolute;right:8px;top:8px;font-size:11px;font-weight:700;background:var(--grad);color:var(--on-gold);border-radius:999px;padding:3px 9px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.g4{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.gs{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.tile{padding:0;border:0;background:none;cursor:pointer;border-radius:12px;display:block;width:100%}
+.tile .art{border-radius:12px}
+.tile:hover .art,.tile[aria-pressed="true"] .art{outline:2px solid var(--gold2);outline-offset:1px}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.card{display:flex;flex-direction:column;gap:10px;text-decoration:none;background:var(--bg2);border-radius:var(--r);padding:10px;transition:transform .2s ease,background .2s ease}
+.card:hover{transform:translateY(-3px);background:#1C1C20}
+.card .meta{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:0 6px;font-size:15px}
+.card .meta span:first-child{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .meta span:last-child{color:var(--muted);font-size:13px;white-space:nowrap}
+.pricebtn{display:flex;align-items:center;justify-content:center;gap:6px;min-height:42px;border-radius:13px;background:var(--grad);color:var(--on-gold);font-weight:800;font-size:15px}
+.pricebtn.dim{background:var(--bg3);color:var(--muted);font-weight:600}
+.rar{position:absolute;right:8px;bottom:8px;font-size:11.5px;font-weight:700;color:var(--violet);background:rgba(14,14,16,.72);border:1px solid rgba(255,255,255,.1);border-radius:999px;padding:3px 9px}
+
+/* chips + list rows */
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:none;min-height:44px;padding:0 18px;border-radius:999px;border:1px solid var(--line);background:transparent;cursor:pointer;font-weight:700;font-size:14.5px;color:var(--fg)}
+.chips button[aria-pressed="true"]{background:var(--bg3);border-color:var(--bg3)}
+.rows{display:flex;flex-direction:column;gap:10px}
+.crow{display:flex;align-items:center;gap:14px;padding:12px 16px 12px 12px;border-radius:20px;background:var(--bg2);text-decoration:none;transition:background .15s ease}
+.crow:hover{background:#1D1D21}
+.crow .av{width:58px;flex:none;border-radius:14px}
+.crow .av .art{border-radius:14px}
+.crow .mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.crow .mid b{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow .mid span{font-size:14px;color:var(--muted)}
+.crow .end{text-align:right;display:flex;flex-direction:column;gap:2px;flex:none}
+.crow .end b{font-size:16px}
+.crow .end span{font-size:13.5px;color:var(--muted)}
+.tagp{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:var(--gold-text)}
+
+.kinds{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.kind{padding:22px;display:flex;flex-direction:column;gap:10px;background:var(--bg2);border-radius:var(--r)}
+.kind .ic{width:44px;height:44px;border-radius:14px;background:var(--bg3);display:grid;place-items:center;color:var(--gold-text)}
+.kind p{color:var(--muted);font-size:15px}
+.eq{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 14px;font-weight:800;font-size:clamp(24px,3vw,38px);letter-spacing:-.02em}
+.eq span{display:inline-flex;flex-direction:column;align-items:center;gap:2px}
+.eq small{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:0}
+.eq .op{color:var(--muted);font-weight:400}
+.eq span:last-child{color:var(--gold-text)}
+
+/* form */
+#cf{counter-reset:st;display:flex;flex-direction:column;gap:14px}
+.step{display:flex;flex-direction:column;gap:16px;padding:22px;border-radius:var(--r);background:var(--bg2);counter-increment:st}
+.step-h{display:flex;align-items:center;gap:12px}
+.step-h .n{width:28px;height:28px;border-radius:9px;background:var(--grad);color:var(--on-gold);display:grid;place-items:center;font-size:13px;font-weight:800;flex:none}
+.step-h .n::before{content:counter(st)}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field>label,.field>.lbl{font-size:13px;color:var(--muted);font-weight:600}
+.input{width:100%;min-height:46px;padding:9px 14px;border-radius:14px;border:1px solid transparent;background:var(--bg3);color:var(--fg)}
+.input:focus{outline:none;border-color:var(--gold2)}
+.input[disabled]{color:var(--muted);background:var(--bg)}
+.input.sm{min-height:38px;padding:6px 12px;font-size:14px;border-radius:12px}
+.hint{font-size:13px;color:var(--muted)}
+.err{font-size:14px;color:var(--warn)}
+.seg{display:inline-flex;flex-wrap:wrap;gap:6px;align-self:flex-start}
+.seg button{min-height:42px;padding:0 16px;border-radius:999px;border:1px solid var(--line);background:none;cursor:pointer;font-size:14px;font-weight:700;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--bg3);border-color:var(--bg3);color:var(--gold-text)}
+.opt{display:flex;gap:14px;align-items:flex-start;padding:16px;border:1px solid var(--line);border-radius:18px;cursor:pointer;background:var(--bg)}
+.opt:has(input:checked){border-color:var(--gold2)}
+.opt input{width:20px;height:20px;margin-top:2px;accent-color:var(--gold2);flex:none}
+.opt b{font-weight:700}
+.opt p{font-size:14px;color:var(--muted)}
+input[type=range]{width:100%;accent-color:var(--gold2);min-height:30px}
+input[type=color]{width:100%;min-height:46px;padding:4px;border-radius:14px;border:0;background:var(--bg3);cursor:pointer}
+.advice{background:var(--bg);border:1px solid var(--line);border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px;font-size:14.5px}
+.advice b{font-weight:800;color:var(--gold-text)}
+.chiprow{display:flex;flex-wrap:wrap;gap:6px}
+.chiprow span{font-size:12.5px;font-weight:600;background:var(--bg3);border-radius:999px;padding:4px 11px}
+.chiprow .ok{color:var(--ok)}
+.chiprow .bad{color:var(--warn)}
+.presets{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px}
+.presets div{background:var(--bg3);border-radius:12px;padding:8px 11px;font-size:12.5px;color:var(--muted)}
+.presets b{display:block;font-size:13.5px;color:var(--fg)}
+.layers{display:flex;flex-direction:column;gap:12px}
+.layer{background:var(--bg);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.layer-h{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.layer-h .input{flex:1 1 140px;width:auto}
+.layer-h select.input{flex:0 1 170px}
+.layer-h .cnt{font-size:12px;font-weight:700;color:var(--muted);min-width:24px;text-align:right}
+.vars{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+.var{display:flex;flex-direction:column;gap:5px;min-width:0;position:relative}
+.var .art{border-radius:12px}
+.var .vn{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.var select{font-size:12px;min-height:32px;padding:4px 6px;border-radius:9px;border:0;background:var(--bg3);width:100%}
+.var .pct{font-size:11px;font-weight:700;color:var(--violet)}
+.var .x{position:absolute;right:5px;top:5px;width:26px;height:26px;border-radius:9px;border:0;background:rgba(14,14,16,.75);color:#fff;cursor:pointer;display:grid;place-items:center;z-index:2}
+.var .x .svgi{width:14px;height:14px}
+.add-var{display:grid;place-items:center;aspect-ratio:1/1;border:1px dashed rgba(226,192,142,.45);border-radius:12px;cursor:pointer;color:var(--gold-text);font-size:12.5px;font-weight:700;text-align:center;padding:6px}
+.add-var:hover{background:var(--bg2)}
+.sr{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+.editor{border:1px solid var(--gold2);border-radius:18px;padding:16px;display:flex;flex-wrap:wrap;gap:20px;background:var(--bg)}
+.editor .ea{flex:0 1 200px;min-width:160px}
+.editor .eb{flex:1 1 240px;min-width:0;display:flex;flex-direction:column;gap:10px}
+.pager{display:flex;align-items:center;gap:10px;font-size:14px;flex-wrap:wrap}
+
+.sum{display:flex;flex-direction:column;background:var(--bg2);border-radius:var(--r);padding:6px 18px}
+.sr-row{display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14.5px}
+.sr-row:last-child{border-bottom:0}
+.sr-row b{font-weight:700;text-align:right}
+.sr-row small{display:block;font-size:12.5px;color:var(--muted)}
+.sr-row.total b{color:var(--gold-text);font-size:17px}
+.sr-row.total{border-bottom:0}
+.big-ok{color:var(--ok)}
+.big-bad{color:var(--warn)}
+
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.stat{background:var(--bg2);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.stat span{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.stat b{font-weight:800;font-size:18px}
+.prog{height:6px;border-radius:999px;background:var(--bg3);overflow:hidden}
+.prog i{display:block;height:100%;background:var(--grad)}
+.traits{display:flex;flex-direction:column;background:var(--bg2);border-radius:18px;padding:4px 16px}
+.trait{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line);font-size:15px}
+.trait:last-child{border-bottom:0}
+.trait span:first-child{color:var(--muted)}
+.trait .mono{color:var(--violet)}
+.box{background:var(--bg2);border-radius:var(--r);padding:20px;display:flex;flex-direction:column;gap:14px}
+.box .stat{background:var(--bg3)}
+.inline{display:flex;flex-wrap:wrap;gap:8px}
+.inline .input{flex:1 1 120px;width:auto}
+.note{font-size:14px;padding:12px 14px;border-radius:14px;background:var(--bg3)}
+.note.warn{color:var(--warn)}
+.note.ok{color:var(--ok)}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:14px;font-weight:600;min-height:44px;margin-bottom:10px}
+.back:hover{color:var(--fg)}
+
+.toc{display:flex;flex-direction:column;gap:2px;background:var(--bg2);border-radius:18px;padding:10px 16px}
+.toc a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:600;padding:7px 0}
+.toc a:hover{color:var(--gold-text)}
+.gsec{display:flex;flex-direction:column;gap:16px;padding:26px;border-radius:var(--r);background:var(--bg2);margin-bottom:14px;scroll-margin-top:84px}
+.cmp{width:100%;border-collapse:collapse;font-size:14.5px}
+.cmp th,.cmp td{text-align:left;padding:12px 10px 12px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.cmp th{font-weight:700;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tw{overflow-x:auto}
+.uses{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.use{background:var(--bg3);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:6px}
+.use p{font-size:14px;color:var(--muted)}
+.empty{display:flex;flex-direction:column;align-items:flex-start;gap:16px;padding:32px;background:var(--bg2);border-radius:var(--r)}
+footer{font-size:13px;color:var(--muted)}
+footer .wrap{padding-block:16px 32px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);opacity:0;pointer-events:none;background:var(--grad);color:var(--on-gold);font-weight:700;padding:12px 18px;border-radius:14px;font-size:14px;transition:all .2s ease;z-index:40;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (max-width:520px){ .wname{display:none} }
+.inside{display:flex;align-items:center;gap:6px;padding:0 6px;font-size:13px;font-weight:700;color:var(--gold-text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inside.dim{color:var(--muted);font-weight:600}
+.inside .svgi{width:15px;height:15px}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.fcard{background:var(--bg2);border-radius:var(--r);padding:22px;display:flex;flex-direction:column;gap:10px}
+.fcard .nb{width:30px;height:30px;border-radius:10px;background:var(--grad);color:var(--on-gold);display:grid;place-items:center;font-weight:800;font-size:14px}
+.fcard p{color:var(--muted);font-size:15px}
+.tbar{display:flex;height:52px;border-radius:14px;overflow:hidden;font-weight:800;font-size:14px}
+.tbar div{display:flex;align-items:center;padding:0 14px;white-space:nowrap}
+.tbar .a{background:var(--bg3);flex:0 0 70%}
+.tbar .b{background:var(--grad);color:var(--on-gold);flex:1}
+.var .lk{position:absolute;left:5px;top:5px;width:26px;height:26px;border-radius:9px;border:0;background:rgba(14,14,16,.75);color:#fff;cursor:pointer;display:grid;place-items:center;z-index:2}
+.var .lk[aria-pressed="true"]{background:var(--grad);color:var(--on-gold)}
+.var .lk .svgi{width:14px;height:14px}
+.soon{display:flex;gap:12px;align-items:flex-start;padding:16px;border-radius:18px;border:1px dashed rgba(226,192,142,.4);color:var(--muted);font-size:14.5px}
+.soon b{color:var(--gold-text)}
+@media (prefers-reduced-motion: reduce){ *{transition:none!important} }
+</style>
+
+<aside class="side" aria-label="Навигация">
+  <a class="logo" href="#home"><span class="mk"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="4"></rect><path d="M9 12.5h6M12 9.5v6"></path></svg></span>STASH</a>
+  <nav class="nav">
+    <a href="#home" data-r="home"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m15.5 8.5-2 5-5 2 2-5z"></path></svg>Обзор</a>
+    <a href="#create" data-r="create"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 15 9M14 4v3M18.5 5.5l-2 2M20 10h-3"></path></svg>Создать</a>
+    <a href="#gen" data-r="gen"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>Генератор</a>
+    <a href="#explore" data-r="explore"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect><rect x="13" y="13" width="7" height="7" rx="2"></rect></svg>Коллекции</a>
+    <a href="#guide" data-r="guide"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4z"></path><path d="M9 9h6M9 13h4"></path></svg>Гайд</a>
+    <a href="#my" data-r="my"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3"></rect><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>Мои NFT</a>
+  </nav>
+</aside>
+<div class="shell">
+<header class="top"><div class="wrap">
+  <a class="logo" href="#home"><span class="mk"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="4"></rect><path d="M9 12.5h6M12 9.5v6"></path></svg></span><span class="lt">Stash</span></a>
+  <label class="search" for="q"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg><input id="q" type="search" placeholder="Поиск токенизированных коллекций" autocomplete="off"></label>
+  <div class="lang" role="group" aria-label="Language / Язык"><button type="button" data-lang="en" aria-pressed="true">EN</button><button type="button" data-lang="ru" aria-pressed="false">RU</button></div>
+  <div class="wallet" id="wallet"></div>
+</div></header>
+<div class="banner"><div class="wrap">Демо-версия: блокчейн пока не подключён, кошелёк и балансы условные, сетевые цены — оценки.</div></div>
+<main class="wrap" id="view"></main>
+<footer><div class="wrap"><span>Stash — токенизированные NFT на NEAR · NEP-171</span><span>Прототип для NEAR HACKATHON</span></div></footer>
+</div>
+<nav class="tabbar nav" aria-label="Разделы">
+  <a href="#home" data-r="home"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m15.5 8.5-2 5-5 2 2-5z"></path></svg>Обзор</a>
+  <a href="#create" data-r="create"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20 15 9M14 4v3M18.5 5.5l-2 2M20 10h-3"></path></svg>Создать</a>
+  <a href="#gen" data-r="gen"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"></path></svg>Генератор</a>
+  <a href="#explore" data-r="explore"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="7" height="7" rx="2"></rect><rect x="13" y="4" width="7" height="7" rx="2"></rect><rect x="4" y="13" width="7" height="7" rx="2"></rect><rect x="13" y="13" width="7" height="7" rx="2"></rect></svg>Коллекции</a>
+  <a href="#guide" data-r="guide"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h10a4 4 0 0 1 4 4v12H9a4 4 0 0 1-4-4z"></path><path d="M9 9h6M9 13h4"></path></svg>Гайд</a>
+  <a href="#my" data-r="my"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="7" width="18" height="13" rx="3"></rect><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>Мои NFT</a>
+</nav>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+/* ---------- language: English by default, Russian on request ----------
+   The source text is Russian. In English mode every text node and the
+   placeholder / aria-label / title attributes are translated as they appear
+   (a MutationObserver catches re-renders, toasts and errors). Originals are
+   kept on the nodes, so switching back to Russian restores them exactly. */
+let LANG = (() => { try{ const v = localStorage.getItem('stash-lang'); return v === 'ru' ? 'ru' : 'en'; }catch(e){ return 'en'; } })();
+const CYR = /[А-Яа-яЁё]/;
+const EN = {
+  // shell
+  'Навигация':'Navigation','Разделы':'Sections','Обзор':'Explore','Создать':'Create','Генератор':'Generator','Коллекции':'Collections','Гайд':'Guide','Мои NFT':'My NFTs',
+  'Поиск токенизированных коллекций':'Search tokenized collections','Подключить кошелёк':'Connect wallet','Выйти':'Log out',
+  'Демо-версия: блокчейн пока не подключён, кошелёк и балансы условные, сетевые цены — оценки.':'Demo version: the blockchain is not connected yet, the wallet and balances are simulated, network prices are estimates.',
+  'Stash — токенизированные NFT на NEAR · NEP-171':'Stash — tokenized NFTs on NEAR · NEP-171','Прототип для NEAR HACKATHON':'Prototype for NEAR HACKATHON',
+  'Демо-кошелёк подключён':'Demo wallet connected','Демо-баланс пополнен':'Demo balance topped up','Назад':'Back','Вперёд':'Next','Фильтр':'Filter','Оглавление':'Contents','Способ':'Method','Стиль':'Style','Палитра':'Palette',
+  // home
+  'Токенизированные NFT на NEAR':'Tokenized NFTs on NEAR','NFT, внутри которых лежат токены':'NFTs with tokens inside',
+  'Каждая NFT хранит NEAR или ваш токен. Владелец забирает их, когда захочет, поэтому дешевле содержимого NFT не станет.':'Each NFT holds NEAR or your own token. The owner can take them out any time, so an NFT is never worth less than what it holds.',
+  'Создать коллекцию':'Create a collection','Как это работает':'How it works','Токенизированная коллекция · пример':'Tokenized collection · example','Формы':'Shapes','Орбиты':'Orbits',
+  'Цена':'Price','Внутри каждой':'Inside each','Сминчено':'Minted','сминчено':'minted','Всё в одном месте':'All in one place','Генератор частей тела':'Body part generator',
+  'Сгенерируйте фоны, тела, глаза и головные уборы для будущей коллекции и сразу соберите из них тысячи NFT.':'Generate backgrounds, bodies, eyes and headwear for your future collection, then turn them into thousands of NFTs right away.',
+  'Открыть генератор':'Open the generator','Токенизированная NFT за три шага':'A tokenized NFT in three steps','Вы решаете, что внутри':'You decide what goes inside',
+  'Например, 30% цены минта в NEAR и 500 ваших токенов в каждую NFT.':'For example, 30% of the mint price in NEAR plus 500 of your tokens in every NFT.',
+  'Покупатель минтит':'A buyer mints','Платит 10 NEAR: 7 получаете вы, 3 остаются внутри его NFT.':'They pay 10 NEAR: you get 7, and 3 stay inside their NFT.',
+  'Владелец решает':'The owner decides','Забирает токены в кошелёк или продаёт NFT вместе с ними.':'They withdraw the tokens to their wallet or sell the NFT with the tokens inside.',
+  'Цена минта 10 NEAR':'Mint price 10 NEAR','Из 10 NEAR 7 получает создатель, 3 остаются внутри NFT':'Of 10 NEAR, the creator gets 7 and 3 stay inside the NFT','7 NEAR создателю':'7 NEAR to the creator','3 внутри':'3 inside',
+  'Долю выбирает создатель. Пока NFT выставлена на продажу, забрать токены нельзя: покупатель получает ровно то, что видит.':'The creator picks the share. While an NFT is listed for sale, its tokens can’t be withdrawn, so the buyer gets exactly what they see.',
+  'Зачем это нужно':'Why it matters','Где пригодятся токены внутри NFT':'Where tokens inside NFTs are useful','Продвижение токена':'Token promotion',
+  'В каждой NFT лежит ваш мемкоин, например с Nearly или JustHoot. Купил NFT — стал держателем токена.':'Every NFT holds your memecoin, say from Nearly or JustHoot. Buy the NFT and you hold the token.',
+  'Награды держателям':'Holder rewards','Проект докладывает токены прямо в NFT, без рассылок и списков кошельков.':'The project tops up tokens straight into the NFTs, with no airdrops or wallet lists.',
+  'Игры и подарки':'Games and gifts','Персонаж хранит своё золото, подарочная NFT — деньги внутри. Продаёшь вместе с содержимым.':'A character keeps its own gold, a gift NFT carries money inside. Sell it and the contents go with it.',
+  'От идеи до выпуска':'From idea to launch','Генератор частей':'Part generator','Фоны, тела, глаза, рты и головные уборы в одной палитре.':'Backgrounds, bodies, eyes, mouths and headwear in one palette.',
+  'Конструктор и анимация':'Builder and animation','Слои собираются в 333, 1 000 или 10 000 разных NFT и оживают.':'Layers combine into 333, 1,000 or 10,000 unique NFTs and come to life.',
+  'Токены внутри':'Tokens inside','NEAR и ваш токен в каждой NFT. Можно выключить и выпустить обычную коллекцию.':'NEAR and your token in every NFT. Switch it off to release a regular collection.',
+  'Выпуск':'Launch','Продавайте на Stash или отчеканьте всё себе и идите на другие маркеты.':'Sell on Stash, or mint everything to yourself and take it to other marketplaces.','Все':'All',
+  // cards
+  'пример':'example','у создателя':'held by creator','ваша':'yours','токены внутри':'tokens inside','Без токенов внутри':'No tokens inside','Продаётся создателем':'Sold by the creator','Разобрано':'Sold out','на продаже':'listed',
+  'Токенизированные':'Tokenized','Из слоёв':'From layers','Свои картинки':'Own images','Алгоритм':'Algorithm',
+  // collection / nft
+  'Всего':'Total','Роялти':'Royalties','Вся коллекция отчеканена в кошелёк создателя. Нажмите на любую NFT ниже, чтобы выставить её на продажу здесь. Или предлагайте NFT на других маркетах NEAR: они видят коллекцию по стандарту NEP-171.':'The whole collection is minted to the creator’s wallet. Tap any NFT below to list it here, or offer the NFTs on other NEAR marketplaces: they see the collection through the NEP-171 standard.',
+  'Вся коллекция отчеканена в кошелёк создателя. Купить NFT можно у создателя или на маркетах NEAR.':'The whole collection is minted to the creator’s wallet. You can buy NFTs from the creator or on NEAR marketplaces.',
+  'Все NFT разобраны':'All NFTs are minted','Процент — как часто такой вариант встречается в коллекции.':'The percentage shows how often this variant appears in the collection.','Тип':'Type','Легендарка 1 из 1':'Legendary 1 of 1',
+  'Внутри NFT':'Inside the NFT','Положить ещё, NEAR':'Add more, NEAR','Положить':'Add','Забрать всё в кошелёк':'Withdraw all to wallet','Продажа':'Sale','Выставлено на Stash за':'Listed on Stash for',
+  '. Пока NFT на продаже, забрать содержимое нельзя.':'. While the NFT is listed, its contents can’t be withdrawn.','Снять с продажи':'Unlist','Выставить на Stash, цена в NEAR':'List on Stash, price in NEAR','Выставить':'List',
+  'Или оставьте NFT у себя и предлагайте её на любом маркете NEAR: NFT по стандарту NEP-171 видна там автоматически.':'Or keep the NFT and offer it on any NEAR marketplace: NEP-171 NFTs show up there automatically.',
+  'Введите сумму больше нуля.':'Enter an amount greater than zero.','Внутри уже пусто.':'It’s already empty inside.',
+  'NFT выставлена на продажу, поэтому забрать содержимое нельзя. Сначала снимите её с продажи.':'The NFT is listed for sale, so its contents can’t be withdrawn. Unlist it first.',
+  'Выставлено на продажу':'Listed for sale','Снято с продажи':'Unlisted',
+  // my
+  'Подключите кошелёк, чтобы увидеть свои NFT. В демо кошелёк условный, на нём 100 NEAR.':'Connect a wallet to see your NFTs. In the demo the wallet is simulated and holds 100 NEAR.',
+  'Куплено NFT':'NFTs bought','Баланс':'Balance','Внутри купленных NFT':'Inside bought NFTs','Токены':'Tokens','Пополнить демо-баланс на 100 NEAR':'Top up demo balance by 100 NEAR',
+  'Коллекции у вас целиком':'Collections you hold entirely','Отдельные NFT':'Individual NFTs','Пока пусто. Сминтите NFT в любой коллекции.':'Nothing here yet. Mint an NFT in any collection.','К коллекциям':'Go to collections',
+  'Страница не найдена':'Page not found','Возможно, данные демо сброшены.':'The demo data may have been reset.','На главную':'Home',
+  // builder
+  'Конструктор':'Builder','Новая коллекция':'New collection','Основное':'Basics','Название':'Name','Тикер':'Ticker','Сколько NFT':'Number of NFTs','От 1 до 10 000':'From 1 to 10,000',
+  'Равно числу загруженных картинок':'Equals the number of uploaded images','Цена минта, NEAR':'Mint price, NEAR','Цена минта, NEAR (для расчёта наполнения)':'Mint price, NEAR (used to calculate contents)',
+  'Роялти создателю с каждой перепродажи:':'Creator royalty on every resale:','Токены внутри NFT':'Tokens inside NFTs','главная фишка':'key feature','Сделать NFT токенизированными':'Make the NFTs tokenized',
+  'В каждой NFT будут лежать NEAR и, если хотите, ваш токен. Владелец заберёт их в любой момент, поэтому дешевле содержимого NFT не станет. Выключите — получится обычная коллекция.':'Every NFT will hold NEAR and, if you like, your own token. The owner can withdraw them any time, so an NFT is never worth less than its contents. Switch this off for a regular collection.',
+  'Сколько внутри:':'Amount inside:','от цены минта':'of the mint price','Добавить свой токен':'Add your own token',
+  'Например мемкоин с Nearly или JustHoot. Токены на всю коллекцию нужно будет заранее перевести в контракт.':'For example, a memecoin from Nearly or JustHoot. Tokens for the whole collection have to be sent to the contract in advance.',
+  'Адрес токена':'Token address','В каждую NFT':'Per NFT','Картинки и анимация':'Images and animation','Каждую NFT сам':'Each NFT myself',
+  'Каждая NFT берёт по одной картинке из каждого слоя, верхние слои рисуются поверх нижних. Сейчас загружен пример — замените его своими PNG одного размера с прозрачным фоном или':'Each NFT takes one image from every layer, and upper layers are drawn over lower ones. An example is loaded now — replace it with your own same-size transparent PNGs or',
+  'сгенерируйте части в генераторе':'generate parts in the generator','. Движение выбирается для каждого слоя отдельно.':'. Motion is set separately for each layer.',
+  'Добавить слой':'Add layer','Вернуть пример':'Restore example','Одна картинка — одна NFT. Порядок картинок — номера NFT. Можно выбрать сразу много файлов.':'One image is one NFT. The image order sets the NFT numbers. You can pick many files at once.',
+  'Движение для всех картинок':'Motion for all images','Картинки не нужны: код рисует каждую NFT по её номеру, и все получаются разными.':'No images needed: code draws every NFT from its number, and each one comes out different.',
+  'Волны':'Waves','Полосы':'Stripes','Рисунок':'Pattern','Проверка и ручная правка':'Review and manual edits','Это вся собранная коллекция. Нажмите на любую NFT, чтобы поменять её вручную.':'This is the whole assembled collection. Tap any NFT to change it by hand.',
+  'Легендарки 1 из 1 — нарисованы целиком вами, входят в общее количество':'Legendaries 1 of 1 — drawn entirely by you, included in the total','Пересобрать всю коллекцию':'Reassemble the whole collection',
+  'Как выпустить':'How to release','Продавать на Stash':'Sell on Stash','Отчеканить всё себе':'Mint everything to myself',
+  'Все NFT сразу появятся в вашем кошельке. За чеканку платите вы, а потом сами предлагаете NFT на любых маркетах NEAR или раздаёте.':'All NFTs appear in your wallet at once. You pay for minting, then offer the NFTs on any NEAR marketplace or give them away.',
+  'Превью':'Preview','Показать другие':'Show others','Запустить коллекцию':'Launch collection','+ Картинки':'+ Images','+ Легендарки':'+ Legendaries','вариантов':'variants',
+  'Название слоя':'Layer name','Движение слоя':'Layer motion','Слой выше':'Move layer up','Слой ниже':'Move layer down','Удалить слой':'Delete layer','Удалить легендарку':'Delete legendary','Закрыть':'Close',
+  'Случайно':'Random','Готово':'Done','Совет:':'Tip:','Возможных вариантов':'Possible variants','Картинок загружено':'Images uploaded','без ограничений':'unlimited','NFT в коллекции':'NFTs in collection',
+  'Запуск контракта':'Contract launch','платите вы, один раз':'you pay, once','платит покупатель при минте':'the buyer pays at mint','платите вы за всю коллекцию':'you pay for the whole collection',
+  'Внутри каждой NFT':'Inside each NFT','кладёте вы':'you put it in','из цены минта':'from the mint price','Наполнение всей коллекции':'Contents of the whole collection','Токенов на всю коллекцию':'Tokens for the whole collection',
+  'Вам с каждого минта':'You get per mint','Если разберут все':'If all are minted','Заплатить при запуске':'Pay at launch','Загрузите картинки.':'Upload images.',
+  'Вариантов меньше, чем NFT. Добавьте картинок в слои или уменьшите количество.':'There are fewer variants than NFTs. Add images to the layers or lower the number.',
+  'Сетевые цены — предварительная оценка, уточним после написания контракта.':'Network prices are a preliminary estimate; we’ll confirm them once the contract is written.',
+  'Укажите название коллекции.':'Enter a collection name.','Тикер: от 2 до 8 латинских букв или цифр.':'Ticker: 2 to 8 Latin letters or digits.','Загрузите хотя бы одну картинку.':'Upload at least one image.',
+  'Количество: целое число от 1 до 10 000.':'Number: a whole number from 1 to 10,000.','Укажите цену минта (0 — бесплатно).':'Enter a mint price (0 means free).',
+  'Для наполнения укажите цену минта больше нуля: от неё считается сумма внутри.':'For contents, set a mint price above zero: the amount inside is calculated from it.',
+  'Добавьте хотя бы один слой.':'Add at least one layer.','Укажите адрес токена.':'Enter the token address.','Укажите тикер токена.':'Enter the token ticker.','Укажите, сколько токенов класть в каждую NFT.':'Enter how many tokens to put in each NFT.',
+  'Не удалось собрать столько разных NFT: слишком много очень редких вариантов. Сделайте часть вариантов обычными.':'Couldn’t assemble that many unique NFTs: too many very rare variants. Make some of them common.',
+  'Пока нечего показать: добавьте картинки в слои.':'Nothing to show yet: add images to the layers.','Сборка обновлена, ручные правки сброшены':'Assembly updated, manual edits were reset',
+  'Пример слоёв возвращён':'Example layers restored','Коллекция пересобрана':'Collection reassembled','Файлы больше 2 МБ пропущены':'Files over 2 MB were skipped',
+  'Легендарок не может быть больше, чем NFT в коллекции':'There can’t be more legendaries than NFTs in the collection','Картинок много: после перезагрузки страницы демо их не запомнит':'Lots of images: the demo won’t remember them after a page reload',
+  'Коллекция запущена (демо)':'Collection launched (demo)','Обычный':'Common','Редкий':'Rare','Очень редкий':'Very rare',
+  // motion
+  'Без движения':'Still','Парит':'Float','Качается':'Sway','Пульсирует':'Pulse','Вращается':'Spin','Моргает':'Blink','Мерцает':'Shimmer','Блик':'Shine',
+  // layer + variant names
+  'Фон':'Background','Свет':'Light','Фигура':'Shape','Глаза':'Eyes','Деталь':'Detail','Тело':'Body','Рот':'Mouth','Головной убор':'Headwear',
+  'Песок':'Sand','Шалфей':'Sage','Туман':'Mist','Пудра':'Blush','Масло':'Butter','Лёд':'Ice','Графит':'Graphite','Апельсин':'Orange','Нет':'None','Искры':'Sparks','Сияние':'Glow','Орбита':'Orbit',
+  'Круг':'Circle','Квадрат':'Square','Треугольник':'Triangle','Шестигранник':'Hexagon','Арка':'Arch','Капля':'Drop','Точки':'Dots','Большие':'Big','Сонные':'Sleepy','Циклоп':'Cyclops','Очки':'Shades',
+  'Антенна':'Antenna','Нимб':'Halo','Цветок':'Flower','Молния':'Bolt','Корона':'Crown','Круглые':'Round','Сердитые':'Angry','Звёзды':'Stars','Улыбка':'Smile','Открытый':'Open','Ровный':'Flat',
+  'Удивлённый':'Surprised','Зубы':'Teeth','Кошачий':'Cat','Кепка':'Cap','Шапка':'Beanie','Рога':'Horns','Бантик':'Bow','однотонный':'plain','точки':'dots','круги':'rings','лучи':'rays',
+  // generator
+  'Части тела для будущей коллекции':'Body parts for your future collection',
+  'Выберите палитру и сколько вариантов нужно в каждой части. Понравившиеся варианты закрепите замком, остальные перегенерируйте. Готовый набор одним нажатием уходит в конструктор.':'Pick a palette and how many variants each part needs. Lock the ones you like and regenerate the rest. One tap sends the finished set to the builder.',
+  'Пастель':'Pastel','Неон':'Neon','Земля':'Earth','Монохром':'Mono','Сгенерировать заново':'Regenerate','Закреплённые варианты останутся':'Locked variants stay','+ Ещё':'+ More',
+  'Скоро: генерация по описанию.':'Coming soon: generate from a description.',
+  'Напишите «пиксельная сова в кепке», и нейросеть нарисует части в одном стиле. Для этого подключим сервис генерации картинок.':'Type “pixel owl in a cap” and an AI model will draw matching parts in one style. This needs an image generation service, which we’ll connect.',
+  'Так будут выглядеть NFT':'This is how the NFTs will look','Другие':'Others','Возможных сочетаний':'Possible combinations','Хватит на коллекцию':'Enough for a collection','с запасом для редкости':'with headroom for rarity',
+  'Перенести в конструктор':'Send to builder','Слои заменят текущие в конструкторе. Движение уже настроено: тело парит, глаза моргают, головной убор качается.':'These layers replace the ones in the builder. Motion is already set: the body floats, eyes blink, headwear sways.',
+  'Части перенесены в конструктор':'Parts sent to the builder','В части должен остаться хотя бы один вариант':'A part needs at least one variant',
+  // guide
+  'Что такое NFT':'What an NFT is','Токенизированные NFT':'Tokenized NFTs','Откуда токены внутри':'Where the tokens inside come from','Как собрать 333 или 3000 NFT':'How to build 333 or 3,000 NFTs',
+  'Три способа делать картинки':'Three ways to make images','Анимация':'Animation','Сколько стоит в блокчейне':'What it costs on-chain','Продавать здесь или забрать себе':'Sell here or keep it all',
+  'Как это использовать':'How to use it','Безопасность':'Safety','NFT — это запись в блокчейне:':'An NFT is a record on the blockchain:',
+  '«предмет №42 из коллекции „Формы“ принадлежит такому-то кошельку»':'“item #42 of the Shapes collection belongs to this wallet”','. Подделать или переписать эту запись нельзя.':'. Nobody can fake or rewrite that record.',
+  'Картинка — это витрина предмета. Скопировать картинку может кто угодно, но владельцем №42 в блокчейне останетесь вы. Как с подписанной картиной: репродукций много, оригинал один.':'The image is the item’s shop window. Anyone can copy the image, but the blockchain still says you own #42. Like a signed painting: plenty of prints, one original.',
+  'Коллекция':'A collection','— набор таких предметов в одном стиле. Размер выбираете вы: 333, 1 000, 3 333 — сколько угодно до 10 000.':'is a set of such items in one style. You choose the size: 333, 1,000, 3,333 — anything up to 10,000.',
+  'Токенизированная NFT — это NFT, внутри которой лежат токены:':'A tokenized NFT is an NFT that holds tokens inside:',
+  'NEAR или любой токен NEAR, например ваш мемкоин. Здесь это называется «наполнение».':'NEAR or any NEAR token, such as your memecoin. On this site we call it the NFT’s “contents”.',
+  'Представьте подарочную коробку. Обычная NFT — это пустая красивая коробка: она стоит столько, сколько за неё кто-то готов заплатить. Пропал интерес — коробка стоит ноль.':'Picture a gift box. A regular NFT is a beautiful empty box: it’s worth whatever someone will pay for it. When interest fades, the box is worth nothing.',
+  'NFT с наполнением — это':'An NFT with tokens inside is','коробка, внутри которой лежат монеты':'a box with coins in it','. Даже если коробка никому не нужна, монеты можно достать. Поэтому дешевле содержимого такая NFT не станет.':'. Even if nobody wants the box, the coins can still be taken out. So such an NFT is never worth less than what it holds.',
+  'Монеты принадлежат тому, кто сейчас владеет NFT. Продали NFT — новый владелец получил и картинку, и монеты внутри.':'The coins belong to whoever owns the NFT right now. Sell the NFT and the new owner gets both the image and the coins inside.',
+  'Обычная NFT':'Regular NFT','NFT с наполнением':'NFT with tokens inside','Сколько стоит':'What it’s worth','Сколько готовы заплатить':'Whatever people will pay','Не меньше того, что внутри':'At least what’s inside',
+  'Если интерес пропал':'If interest fades','Может стоить ноль':'Can be worth zero','Можно забрать содержимое':'The contents can be withdrawn','Что получает покупатель':'What the buyer gets',
+  'Картинку и право владения':'The image and ownership','Картинку, право владения и монеты':'The image, ownership and the coins',
+  '1. Из цены минта.':'1. From the mint price.','NFT стоит 10 NEAR. Создатель ставит «30% внутрь»: 7 NEAR получает он, 3 NEAR остаются внутри NFT у покупателя.':'An NFT costs 10 NEAR. The creator sets “30% inside”: they get 7 NEAR, and 3 NEAR stay inside the buyer’s NFT.',
+  '2. Вашим токеном.':'2. With your own token.','Например, мемкоином с Nearly или JustHoot: его можно положить в каждую NFT.':'For example, a memecoin from Nearly or JustHoot can go into every NFT.',
+  '3. Позже.':'3. Later.','Создатель или сам владелец может докладывать в NFT в любой момент, например как награду.':'The creator or the owner can top up an NFT at any time, for example as a reward.',
+  'Если вы чеканите всю коллекцию себе, цены минта нет, поэтому наполнение кладёте вы сами.':'If you mint the whole collection to yourself, there’s no mint price, so you put the contents in yourself.',
+  'Рисовать каждую картинку не нужно. Картинку делят на':'You don’t have to draw every image. The image is split into','слои':'layers',
+  ', как бумажную куклу: фон, фигура, глаза, шапка. Для каждого слоя рисуют несколько вариантов, а сайт перебирает сочетания.':', like a paper doll: background, shape, eyes, hat. Each layer gets a few variants, and the site works through the combinations.',
+  'Вы указываете, сколько NFT хотите, и конструктор подсказывает, сколько вариантов нарисовать. Считаем с запасом в полтора раза, чтобы работала редкость:':'You say how many NFTs you want, and the builder tells you how many variants to draw. We count with 1.5× headroom so rarity works:',
+  'NFT в коллекции':'NFTs in collection','Вариантов в каждом из 5 слоёв':'Variants in each of 5 layers',
+  'Например, для 1 000 NFT хватит 5 фонов, 5 фигур, 5 глаз, 5 шапок и 5 аксессуаров. Слоёв больше — вариантов в каждом нужно меньше.':'For example, 1,000 NFTs need just 5 backgrounds, 5 shapes, 5 eyes, 5 hats and 5 accessories. More layers means fewer variants per layer.',
+  'Каждому варианту можно задать редкость. Если корона встречается редко, NFT с короной ценнее. Сайт следит, чтобы все NFT были разными.':'Each variant can have a rarity. If crowns are rare, NFTs with a crown are worth more. The site makes sure every NFT is unique.',
+  'Что нужно от вас:':'What you need:','картинки слоёв в формате PNG одного размера с прозрачным фоном. Их можно нарисовать самому, заказать художнику или собрать во встроенном генераторе частей.':'layer images as same-size PNGs with transparent backgrounds. Draw them yourself, commission an artist, or build them in the part generator.',
+  '1. Каждую NFT сами.':'1. Each NFT by hand.','Загружаете готовые картинки: одна картинка — одна NFT. Подходит для небольших коллекций.':'Upload finished images: one image is one NFT. Good for small collections.',
+  '2. Из слоёв с ручной правкой.':'2. From layers with manual edits.','Сайт собирает коллекцию случайно, а вы листаете результат и меняете любую NFT: другой фон, другие глаза.':'The site assembles the collection at random, then you browse it and change any NFT: a different background, different eyes.',
+  '3. Смешанно.':'3. Mixed.','Основная часть собирается из слоёв, плюс несколько «легендарок» 1 из 1, которые вы рисуете целиком сами. При запуске они случайно распределяются по номерам коллекции.':'Most of the collection comes from layers, plus a few 1-of-1 “legendaries” you draw entirely yourself. At launch they’re spread randomly across the collection’s numbers.',
+  'Да, ваша коллекция анимируется по вашим же слоям.':'Yes, your collection animates using your own layers.',
+  'Вы загружаете обычные неподвижные картинки и для каждого слоя выбираете движение: парит, качается, пульсирует, вращается, моргает, мерцает. Сайт двигает слои по отдельности, и картинка оживает.':'You upload ordinary still images and choose a motion for each layer: float, sway, pulse, spin, blink, shimmer. The site moves each layer separately and the picture comes to life.',
+  'Если слой «парит», всё, что выше него, двигается вместе с ним: глаза не уплывут с лица. У каждой NFT движение чуть сдвинуто по времени.':'If a layer floats, everything above it moves along, so the eyes never drift off the face. Each NFT’s motion is slightly offset in time.',
+  'Готовые картинки без слоёв тоже можно оживить, но только целиком: парение, покачивание, пульс или блик.':'Finished images without layers can be animated too, but only as a whole: float, sway, pulse or shine.',
+  'При настоящем запуске каждая NFT сохранится как анимированный файл и загрузится в постоянное хранилище (IPFS или Arweave). Маркеты показывают уже этот файл.':'At a real launch, every NFT is saved as an animated file and uploaded to permanent storage (IPFS or Arweave). Marketplaces show that file.',
+  'В NEAR за хранение данных в сети платят небольшой залог. Поэтому у коллекции два вида расходов:':'On NEAR, storing data on-chain requires a small deposit. So a collection has two kinds of costs:',
+  'Запуск контракта коллекции':'Launching the collection contract','— один раз, около 3–5 NEAR. Платит создатель.':'— once, about 3–5 NEAR. The creator pays.','Чеканка каждой NFT':'Minting each NFT',
+  'Цифры предварительные: точную стоимость покажем после написания контракта, она зависит от размера данных каждой NFT.':'These figures are preliminary: we’ll show the exact cost once the contract is written, since it depends on each NFT’s data size.',
+  'При запуске вы выбираете один из двух вариантов:':'At launch you choose one of two options:','Как работает':'How it works','NFT чеканятся, когда их покупают':'NFTs are minted when bought',
+  'Все NFT сразу появляются в вашем кошельке':'All NFTs appear in your wallet at once','Кто платит за чеканку':'Who pays for minting','Покупатель, при покупке':'The buyer, at purchase','Вы, сразу за всю коллекцию':'You, upfront for the whole collection',
+  'Где продавать':'Where to sell','Страница минта на Stash':'The mint page on Stash','Любые маркеты NEAR, раздачи, OTC':'Any NEAR marketplace, giveaways, OTC','Наполнение':'Contents','Берётся из цены минта':'Taken from the mint price','Кладёте вы сами':'You put it in yourself',
+  'Награды сообществу':'Community rewards','Проект докладывает токены прямо в NFT держателей, без рассылок и списков кошельков.':'The project tops up tokens straight into holders’ NFTs, with no airdrops or wallet lists.',
+  'Подарки':'Gifts','NFT как подарочная карта: красивая картинка и деньги внутри.':'An NFT as a gift card: a nice image with money inside.','Игры':'Games','Персонаж-NFT хранит своё золото. Продаёшь персонажа вместе с ним.':'A character NFT keeps its own gold. Sell the character and the gold goes with it.',
+  'Сундуки':'Chests','Чем реже NFT, тем больше внутри. Это идея для следующей версии.':'The rarer the NFT, the more inside. An idea for the next version.','Билеты с кешбэком':'Tickets with cashback',
+  'Билет на событие, внутри которого лежит часть цены. Сходил — забрал.':'An event ticket with part of its price inside. Attend, then withdraw it.','В каждой NFT лежит ваш мемкоин. Купил NFT — стал держателем токена.':'Every NFT holds your memecoin. Buy the NFT and you hold the token.',
+  'Продавец не может опустошить NFT перед продажей.':'A seller can’t empty an NFT right before a sale.','Пока NFT выставлена на продажу, достать содержимое нельзя.':'While an NFT is listed for sale, its contents can’t be taken out.',
+  'NFT сделаны по стандарту NEAR (NEP-171), поэтому видны в кошельках и маркетах NEAR. Содержимое любой NFT можно проверить по ссылке на её страницу.':'NFTs follow the NEAR standard (NEP-171), so they show up in NEAR wallets and marketplaces. Anyone can check an NFT’s contents via the link to its page.',
+  'Перед запуском в основной сети контракт, который хранит чужие деньги, нужно проверить независимым аудитом.':'Before mainnet launch, a contract that holds other people’s money must pass an independent audit.'
+};
+const VERB = {'Удалить вариант':'Delete variant','Редкость':'Rarity of','Закрепить':'Lock','Открепить':'Unlock','Удалить':'Delete','Удалить картинку':'Delete image','Открыть NFT':'Open NFT'};
+const T = s => { const r = trCore(s); return r == null ? s : r; };
+const RX = [
+  [/^#(\d+) следующая$/, n => `#${n} next`],
+  [/^Внутри (.+)$/, x => 'Inside ' + T(x)],
+  [/^внутри (.+)$/, x => 'inside ' + T(x)],
+  [/^Сминтить за (.+) NEAR$/, x => `Mint for ${x} NEAR`],
+  [/^Первые (\d+) из (.+)$/, (a, b) => `First ${a} of ${b}`],
+  [/^Сминчено: (.+)$/, x => 'Minted: ' + T(x)],
+  [/^(.+) #(\d+)$/, (a, n) => T(a) + ' #' + n],
+  [/^В кошелёк переведено: (.+)$/, x => 'Sent to your wallet: ' + T(x)],
+  [/^Не хватает NEAR в демо-кошельке: нужно ≈ (.+), на балансе (.+)\. Пополнить демо-баланс можно в разделе «Мои NFT»\.$/, (a, b) => `Not enough NEAR in the demo wallet: you need ≈ ${a}, the balance is ${b}. You can top up the demo balance in “My NFTs”.`],
+  [/^Не хватает NEAR: нужно (.+), на балансе (.+)\.$/, (a, b) => `Not enough NEAR: you need ${a}, the balance is ${b}.`],
+  [/^На балансе только (.+) NEAR\.$/, a => `Your balance is only ${a} NEAR.`],
+  [/^Положено (.+) NEAR$/, a => `Added ${a} NEAR`],
+  [/^Ничего не нашлось по запросу «(.*)»\.$/, a => `Nothing found for “${a}”.`],
+  [/^Ничего не нашлось\.$/, () => 'Nothing found.'],
+  [/^Собрано только (.+) разных NFT из (.+)\. Добавьте вариантов в слои\.$/, (a, b) => `Only ${a} unique NFTs assembled out of ${b}. Add more variants to the layers.`],
+  [/^В слое «(.+)» нет картинок\. Добавьте их или удалите слой\.$/, a => `Layer “${T(a)}” has no images. Add some or delete the layer.`],
+  [/^для (.+) NFT из (\d+) (?:слоя|слоёв) нарисуйте примерно по$/, (a, b) => `for ${a} NFTs across ${b} layer${b === '1' ? '' : 's'}, draw about`],
+  [/^вариантов в каждом слое\. Это (.+) сочетаний — с запасом, чтобы работала редкость\.$/, a => `variants per layer. That’s ${a} combinations, with headroom for rarity.`],
+  [/^Сейчас возможно (.+) сочетаний — хватает\. Для других размеров при (\d+) слоях:$/, (a, b) => `Right now ${a} combinations are possible — enough. For other sizes with ${b} layers:`],
+  [/^Сейчас возможно (.+) сочетаний — не хватает, добавьте варианты\. Для других размеров при (\d+) слоях:$/, (a, b) => `Right now ${a} combinations are possible — not enough, add variants. For other sizes with ${b} layers:`],
+  [/^(.+): (\d+) — ещё (\d+)$/, (a, b, c) => `${T(a)}: ${b} — ${c} more needed`],
+  [/^(.+): (\d+)$/, (a, b) => `${T(a)}: ${b}`],
+  [/^по (\d+) в слое$/, a => `${a} per layer`],
+  [/^(\d+) вар\.$/, a => `${a} variants`],
+  [/^до (.+) NFT$/, a => `up to ${a} NFTs`],
+  [/^(.+) NFT · правок вручную: (\d+)$/, (a, b) => `${a} NFTs · manual edits: ${b}`],
+  [/^Плюс чеканка ≈ (.+) NEAR — залог сети за хранение NFT, его платит покупатель\.$/, a => `Plus minting ≈ ${a} NEAR — the network storage deposit for the NFT, paid by the buyer.`],
+  [/^Появится страница минта\. NFT чеканятся, когда их покупают, и за чеканку \(≈ (.+) NEAR за штуку\) платит покупатель\.$/, a => `You get a mint page. NFTs are minted when bought, and the buyer pays for minting (≈ ${a} NEAR each).`],
+  [/^Чеканка ≈ (.+) NEAR за NFT$/, a => `Minting ≈ ${a} NEAR per NFT`],
+  [/^— около (.+) NEAR за штуку\. Кто платит, зависит от способа выпуска \(ниже\)\. Например, (.+) NFT — около (.+) NEAR, (.+) NFT — около (.+) NEAR\.$/, (a, b, c, d, e) => `— about ${a} NEAR each. Who pays depends on how you release (below). For example, ${b} NFTs cost about ${c} NEAR, ${d} NFTs about ${e} NEAR.`],
+  [/^Отчеканено (.+) NFT в ваш кошелёк \(демо\)$/, a => `Minted ${a} NFTs to your wallet (demo)`],
+  [/^Максимум (\d+) вариантов$/, a => `Maximum ${a} variants`],
+  [/^Такая NFT уже есть — №(\d+)\. Выберите другое сочетание\.$/, a => `That NFT already exists — #${a}. Pick another combination.`],
+  [/^(.+)\. При запуске получит случайный номер в коллекции\.$/, a => `${T(a)}. At launch it gets a random number in the collection.`],
+  [/^Фон (\d+), (.+)$/, (n, p) => `Background ${n}, ${T(p)}`],
+  [/^Тело (\d+), пятна$/, n => `Body ${n}, spots`],
+  [/^Тело (\d+)$/, n => `Body ${n}`],
+  [/^Слой (\d+)$/, n => `Layer ${n}`],
+  [/^(Удалить вариант|Удалить картинку|Открыть NFT|Редкость|Закрепить|Открепить|Удалить) (.+)$/, (v, x) => `${VERB[v]} ${T(x)}`],
+  [/^Максимум (\d+)/, a => `Maximum ${a}`]
+];
+const PHR = [['у создателя','held by creator'],[' шт',' items'],['токенов','tokens'],['пример','example'],[' и ',' and '],['следующая','next']];
+function trCore(core){
+  if(Object.prototype.hasOwnProperty.call(EN, core)) return EN[core];
+  for(const [re, fn] of RX){ const m = core.match(re); if(m) return fn(...m.slice(1)); }
+  let o = core; for(const [a, b] of PHR) o = o.split(a).join(b);
+  return CYR.test(o) ? null : o;
+}
+function trString(s){ const core = s.trim(); if(!core || !CYR.test(core)) return null; const r = trCore(core); return r == null ? null : s.replace(core, r); }
+const ATTRS = ['placeholder','aria-label','title'];
+function trTextNode(n){
+  if(LANG !== 'en' || !CYR.test(n.nodeValue)) return;
+  const p = n.parentElement; if(!p || p.closest('script,style')) return;
+  const r = trString(n.nodeValue); if(r == null) return;
+  if(n.__ru === undefined) n.__ru = n.nodeValue;
+  n.nodeValue = r;
+}
+function trAttr(el, a){
+  if(LANG !== 'en') return; const v = el.getAttribute(a); if(!v || !CYR.test(v)) return;
+  const r = trString(v); if(r == null) return;
+  el.__ruA = el.__ruA || {}; if(el.__ruA[a] === undefined) el.__ruA[a] = v;
+  el.setAttribute(a, r);
+}
+function trTree(root){
+  if(LANG !== 'en' || !root) return;
+  if(root.nodeType === 3){ trTextNode(root); return; }
+  if(root.nodeType !== 1) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n;
+  while((n = w.nextNode())) trTextNode(n);
+  [root, ...root.querySelectorAll('*')].forEach(el => {
+    ATTRS.forEach(a => { if(el.hasAttribute(a)) trAttr(el, a); });
+    if(el.tagName === 'INPUT' && el.type === 'text' && CYR.test(el.value) && Object.prototype.hasOwnProperty.call(EN, el.value.trim())) el.value = EN[el.value.trim()];
+  });
+}
+function restoreRu(){
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
+  while((n = w.nextNode())) if(n.__ru !== undefined){ n.nodeValue = n.__ru; n.__ru = undefined; }
+  document.querySelectorAll('*').forEach(el => { if(el.__ruA){ Object.entries(el.__ruA).forEach(([a, v]) => el.setAttribute(a, v)); el.__ruA = null; } });
+}
+const langObserver = new MutationObserver(muts => {
+  if(LANG !== 'en') return;
+  for(const m of muts){
+    if(m.type === 'childList') m.addedNodes.forEach(trTree);
+    else if(m.type === 'characterData') trTextNode(m.target);
+    else if(m.type === 'attributes') trAttr(m.target, m.attributeName);
+  }
+});
+function renderLangUI(){ document.documentElement.lang = LANG; document.querySelectorAll('[data-lang]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === LANG))); }
+function setLang(l){
+  if(l === LANG) return;
+  LANG = l; try{ localStorage.setItem('stash-lang', l); }catch(e){}
+  if(l === 'ru') restoreRu(); else trTree(document.body);
+  renderLangUI(); renderWallet(); route();
+}
+function startLang(){
+  document.querySelectorAll('[data-lang]').forEach(b => b.onclick = () => setLang(b.dataset.lang));
+  renderLangUI(); trTree(document.body);
+  langObserver.observe(document.body, {childList:true, subtree:true, characterData:true, attributes:true, attributeFilter:ATTRS});
+}
+
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (n, d=2) => Number(n || 0).toLocaleString(LANG === 'ru' ? 'ru-RU' : 'en-US', {maximumFractionDigits:d});
+const r2 = n => Math.round(n*100)/100;
+const num = v => parseFloat(String(v).replace(',', '.').replace(/\s/g, ''));
+const uid = () => Math.random().toString(36).slice(2, 9);
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* Network cost estimates (to be confirmed once the contract exists) */
+const MINT_COST = 0.01;      // NEAR storage deposit per NFT, estimate
+const DEPLOY_COST = 4;       // NEAR, midpoint of the 3–5 estimate, charged in the demo
+
+const IC = {
+  up:'<svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 15 6-6 6 6"></path></svg>',
+  down:'<svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>',
+  x:'<svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>',
+  back:'<svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"></path></svg>',
+  arrow:'<svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>',
+  layers:'<svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 9 5-9 5-9-5z"></path><path d="m3 13 9 5 9-5"></path></svg>',
+  play:'<svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m10 8.5 5 3.5-5 3.5z"></path></svg>',
+  coins:'<svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="9" cy="7" rx="6" ry="3"></ellipse><path d="M3 7v5c0 1.7 2.7 3 6 3s6-1.3 6-3V7"></path><path d="M9 15v2c0 1.7 2.7 3 6 3s6-1.3 6-3v-5c0-1.6-2.4-2.9-5.5-3"></path></svg>',
+  lock:'<svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>',
+  spark:'<svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"></path></svg>',
+  shuffle:'<svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4h4v4M4 20 20 4M20 16v4h-4M15 15l5 5M4 4l5 5"></path></svg>'
+};
+
+/* ---------- random + colour ---------- */
+function rng(seed){ let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function rgb(hex){ const h = hex.replace('#',''); const v = parseInt(h.length===3 ? h.split('').map(x=>x+x).join('') : h, 16); return [v>>16 & 255, v>>8 & 255, v & 255]; }
+function mixc(a, b, t){ const A = rgb(a), B = rgb(b); return '#' + A.map((x,i) => Math.round(x + (B[i]-x)*t).toString(16).padStart(2,'0')).join(''); }
+function lum(hex){ const [r,g,b] = rgb(hex); return (0.299*r + 0.587*g + 0.114*b)/255; }
+function rgba(hex, a){ const [r,g,b] = rgb(hex); return `rgba(${r},${g},${b},${a})`; }
+
+/* ---------- example layers ---------- */
+const P = (t, v, label, w=10, extra={}) => ({id:uid(), kind:'proc', p:{t, v, ...extra}, label, w});
+function exampleLayers(){
+  return [
+    {id:uid(), name:'Фон', anim:'none', variants:[
+      P('bg','sand','Песок',10,{c:'#E6E0D4'}), P('bg','sage','Шалфей',10,{c:'#D3E0D7'}), P('bg','mist','Туман',10,{c:'#D9DFEC'}),
+      P('bg','blush','Пудра',10,{c:'#ECD6CF'}), P('bg','butter','Масло',10,{c:'#EFE2B4'}), P('bg','ice','Лёд',10,{c:'#D3EBF0'}),
+      P('bg','graph','Графит',4,{c:'#202127'}), P('bg','orange','Апельсин',1,{c:'#F45B33'})]},
+    {id:uid(), name:'Свет', anim:'shimmer', variants:[
+      P('light','none','Нет',10), P('light','sparks','Искры',4), P('light','glow','Сияние',4), P('light','orbit','Орбита',1)]},
+    {id:uid(), name:'Фигура', anim:'float', variants:[
+      P('body','circle','Круг'), P('body','square','Квадрат'), P('body','tri','Треугольник',4),
+      P('body','hex','Шестигранник',4), P('body','arch','Арка'), P('body','blob','Капля',4)]},
+    {id:uid(), name:'Глаза', anim:'blink', variants:[
+      P('eyes','dots','Точки'), P('eyes','big','Большие'), P('eyes','sleepy','Сонные',4), P('eyes','cyclops','Циклоп',4), P('eyes','shades','Очки',1)]},
+    {id:uid(), name:'Деталь', anim:'sway', variants:[
+      P('detail','none','Нет',10), P('detail','antenna','Антенна',10), P('detail','halo','Нимб',4),
+      P('detail','flower','Цветок',4), P('detail','bolt','Молния',4), P('detail','crown','Корона',1)]}
+  ];
+}
+const ANIMS = [['none','Без движения'],['float','Парит'],['sway','Качается'],['pulse','Пульсирует'],['spin','Вращается'],['blink','Моргает'],['shimmer','Мерцает']];
+const FILE_ANIMS = [['none','Без движения'],['float','Парит'],['sway','Качается'],['pulse','Пульсирует'],['shine','Блик']];
+const RARITY = [[10,'Обычный'],[4,'Редкий'],[1,'Очень редкий']];
+function rarityKey(w){ return w >= 8 ? 10 : w >= 3 ? 4 : 1; }
+
+/* ---------- procedural drawing, unit square ---------- */
+function rr(ctx, x, y, w, h, r){ if(ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); }
+function shapePath(ctx, v, t){
+  ctx.beginPath();
+  if(v === 'circle') ctx.arc(.5,.56,.25,0,6.283);
+  else if(v === 'square') rr(ctx, .27,.33,.46,.46,.07);
+  else if(v === 'tri'){ ctx.moveTo(.5,.25); ctx.lineTo(.79,.78); ctx.lineTo(.21,.78); ctx.closePath(); }
+  else if(v === 'hex'){ for(let i=0;i<6;i++){ const a = Math.PI/6 + i*Math.PI/3; ctx.lineTo(.5+.27*Math.cos(a), .56+.27*Math.sin(a)); } ctx.closePath(); }
+  else if(v === 'arch'){ ctx.moveTo(.27,.8); ctx.lineTo(.27,.53); ctx.arc(.5,.53,.23,Math.PI,0); ctx.lineTo(.73,.8); ctx.closePath(); }
+  else { for(let i=0;i<=64;i++){ const a = i/64*6.283, r = .25*(1+.07*Math.sin(5*a + t*2)); ctx.lineTo(.5+r*Math.cos(a), .56+r*Math.sin(a)); } ctx.closePath(); }
+}
+function star4(ctx, x, y, s){ ctx.beginPath(); ctx.moveTo(x, y-s); ctx.quadraticCurveTo(x, y, x+s, y); ctx.quadraticCurveTo(x, y, x, y+s); ctx.quadraticCurveTo(x, y, x-s, y); ctx.quadraticCurveTo(x, y, x, y-s); ctx.fill(); }
+function blobPath(ctx, p, t){
+  const r = rng(p.s), a1 = .03 + r()*.05, a2 = r()*.04, a3 = r()*.03, f1 = r()*6.28, f2 = r()*6.28, f3 = r()*6.28, sy = p.sy || 1;
+  ctx.beginPath();
+  for(let i=0;i<=80;i++){ const th = i/80*6.283, rad = .26*(1 + a1*Math.sin(2*th+f1+t*.5) + a2*Math.sin(3*th+f2) + a3*Math.sin(5*th+f3+t*.8));
+    ctx.lineTo(.5 + rad*Math.cos(th), .6 + rad*Math.sin(th)*sy); }
+  ctx.closePath();
+}
+const INK = '#16161B';
+function drawGen(ctx, p, t, idx){
+  if(p.t === 'gbg'){
+    const g = ctx.createLinearGradient(0, 0, 1, 1); g.addColorStop(0, p.c1); g.addColorStop(1, p.c2); ctx.fillStyle = g; ctx.fillRect(0,0,1,1);
+    if(p.pat === 'dots'){ ctx.fillStyle = 'rgba(255,255,255,.18)'; for(let x=.06;x<1;x+=.1) for(let y=.06;y<1;y+=.1){ ctx.beginPath(); ctx.arc(x, y, .009, 0, 6.283); ctx.fill(); } }
+    if(p.pat === 'rings'){ ctx.strokeStyle = 'rgba(255,255,255,.16)'; ctx.lineWidth = .01; for(let k=1;k<7;k++){ ctx.beginPath(); ctx.arc(.5,.6,k*.11,0,6.283); ctx.stroke(); } }
+    if(p.pat === 'rays'){ ctx.fillStyle = 'rgba(255,255,255,.1)'; for(let k=0;k<12;k+=2){ ctx.beginPath(); ctx.moveTo(.5,.6); ctx.arc(.5,.6,1.2,k/12*6.283,(k+1)/12*6.283); ctx.closePath(); ctx.fill(); } }
+    return;
+  }
+  if(p.t === 'gbody'){
+    ctx.fillStyle = p.c; blobPath(ctx, p, t); ctx.fill();
+    ctx.save(); blobPath(ctx, p, t); ctx.clip();
+    if(p.spots){ const r = rng(p.s + 3); ctx.fillStyle = 'rgba(0,0,0,.12)'; for(let i=0;i<6;i++){ ctx.beginPath(); ctx.arc(.3 + r()*.4, .45 + r()*.35, .02 + r()*.03, 0, 6.283); ctx.fill(); } }
+    ctx.fillStyle = 'rgba(255,255,255,.18)'; ctx.beginPath(); ctx.ellipse(.4, .48, .09, .05, -.5, 0, 6.283); ctx.fill();
+    ctx.restore(); return;
+  }
+  if(p.t === 'geyes'){
+    const dx = p.dx || .085, y = .56, look = Math.sin(t*.9)*.01;
+    const eye = (x, r) => { ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill(); ctx.fillStyle = p.pc || INK; ctx.beginPath(); ctx.arc(x+look, y+.004, r*.5, 0, 6.283); ctx.fill(); ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(x+look-r*.18, y-r*.18, r*.15, 0, 6.283); ctx.fill(); };
+    if(p.st === 'round'){ eye(.5-dx, .05); eye(.5+dx, .05); }
+    else if(p.st === 'big'){ eye(.5-dx, .07); eye(.5+dx, .07); }
+    else if(p.st === 'cyclops'){ eye(.5, .085); }
+    else if(p.st === 'sleepy'){ ctx.strokeStyle = INK; ctx.lineWidth = .014; ctx.lineCap = 'round'; [.5-dx,.5+dx].forEach(x => { ctx.beginPath(); ctx.arc(x, y-.01, .035, .15*Math.PI, .85*Math.PI); ctx.stroke(); }); }
+    else if(p.st === 'angry'){ eye(.5-dx, .05); eye(.5+dx, .05); ctx.strokeStyle = INK; ctx.lineWidth = .016; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(.5-dx-.05,.5); ctx.lineTo(.5-dx+.04,.525); ctx.moveTo(.5+dx+.05,.5); ctx.lineTo(.5+dx-.04,.525); ctx.stroke(); }
+    else if(p.st === 'dots'){ ctx.fillStyle = INK; [.5-dx,.5+dx].forEach(x => { ctx.beginPath(); ctx.arc(x, y, .024, 0, 6.283); ctx.fill(); }); }
+    else if(p.st === 'stars'){ ctx.fillStyle = p.pc || '#F5D23B'; [.5-dx,.5+dx].forEach(x => star4(ctx, x, y, .045)); }
+    return;
+  }
+  if(p.t === 'gmouth'){
+    const y = .68; ctx.strokeStyle = INK; ctx.fillStyle = INK; ctx.lineWidth = .014; ctx.lineCap = 'round';
+    if(p.st === 'smile'){ ctx.beginPath(); ctx.arc(.5, y-.03, .05, .15*Math.PI, .85*Math.PI); ctx.stroke(); }
+    else if(p.st === 'open'){ ctx.beginPath(); ctx.arc(.5, y-.01, .045, 0, Math.PI); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#F07A8A'; ctx.beginPath(); ctx.arc(.5, y+.022, .02, Math.PI, 0); ctx.fill(); }
+    else if(p.st === 'flat'){ ctx.beginPath(); ctx.moveTo(.46, y); ctx.lineTo(.54, y); ctx.stroke(); }
+    else if(p.st === 'o'){ ctx.beginPath(); ctx.arc(.5, y, .02, 0, 6.283); ctx.fill(); }
+    else if(p.st === 'teeth'){ ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); rr(ctx, .45, y-.02, .1, .04, .012); ctx.fill(); ctx.lineWidth = .008; ctx.stroke(); ctx.beginPath(); ctx.moveTo(.5, y-.02); ctx.lineTo(.5, y+.02); ctx.stroke(); }
+    else if(p.st === 'cat'){ ctx.beginPath(); ctx.arc(.475, y-.01, .025, .1*Math.PI, .9*Math.PI); ctx.moveTo(.55, y-.005); ctx.arc(.525, y-.01, .025, .1*Math.PI, .9*Math.PI); ctx.stroke(); }
+    return;
+  }
+  if(p.t === 'ghat'){
+    const c = p.c || '#E8B63E';
+    if(p.st === 'cap'){ ctx.fillStyle = c; ctx.beginPath(); ctx.arc(.5, .38, .15, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.beginPath(); rr(ctx, .48, .365, .2, .03, .015); ctx.fill(); }
+    else if(p.st === 'beanie'){ ctx.fillStyle = c; ctx.beginPath(); ctx.arc(.5, .39, .16, Math.PI, 0); ctx.closePath(); ctx.fill(); ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.beginPath(); ctx.arc(.5, .22, .035, 0, 6.283); ctx.fill(); ctx.fillStyle = 'rgba(0,0,0,.15)'; ctx.fillRect(.34, .36, .32, .03); }
+    else if(p.st === 'crown'){ ctx.fillStyle = '#E8B63E'; ctx.beginPath(); ctx.moveTo(.39,.37); ctx.lineTo(.39,.26); ctx.lineTo(.445,.31); ctx.lineTo(.5,.23); ctx.lineTo(.555,.31); ctx.lineTo(.61,.26); ctx.lineTo(.61,.37); ctx.closePath(); ctx.fill(); }
+    else if(p.st === 'horns'){ ctx.fillStyle = c; [[.38,-1],[.62,1]].forEach(([x, d]) => { ctx.beginPath(); ctx.moveTo(x-.04, .38); ctx.quadraticCurveTo(x+d*.02, .3, x+d*.06, .22); ctx.quadraticCurveTo(x+d*.03, .33, x+.04, .38); ctx.closePath(); ctx.fill(); }); }
+    else if(p.st === 'bow'){ ctx.fillStyle = c; ctx.beginPath(); ctx.moveTo(.62,.34); ctx.lineTo(.54,.29); ctx.lineTo(.54,.39); ctx.closePath(); ctx.moveTo(.62,.34); ctx.lineTo(.7,.29); ctx.lineTo(.7,.39); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.arc(.62,.34,.02,0,6.283); ctx.fill(); }
+    else if(p.st === 'antenna'){ ctx.strokeStyle = INK; ctx.lineWidth = .012; ctx.beginPath(); ctx.moveTo(.5,.36); ctx.lineTo(.5,.24); ctx.stroke(); ctx.fillStyle = c; ctx.beginPath(); ctx.arc(.5,.23,.03,0,6.283); ctx.fill(); }
+    else if(p.st === 'halo'){ ctx.strokeStyle = '#F2CF6B'; ctx.lineWidth = .014; ctx.beginPath(); ctx.ellipse(.5,.25,.12,.035,0,0,6.283); ctx.stroke(); }
+  }
+}
+function drawProc(ctx, p, env){
+  const {t, idx} = env;
+  if(p.t && p.t[0] === 'g' && p.t.length > 2 && p.t !== 'glow'){ drawGen(ctx, p, t, idx); return; }
+  if(p.t === 'bg'){ ctx.fillStyle = p.c; ctx.fillRect(0,0,1,1); return; }
+  if(p.t === 'body'){ ctx.fillStyle = env.body; shapePath(ctx, p.v, t); ctx.fill(); return; }
+  if(p.t === 'eyes'){
+    const ink = env.lightBody ? '#15151A' : '#FFFFFF', pup = '#111114', look = Math.sin(t*.9)*.012;
+    const eye = (x, y, r) => { ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.283); ctx.fill(); ctx.fillStyle = pup; ctx.beginPath(); ctx.arc(x+look, y, r*.45, 0, 6.283); ctx.fill(); };
+    if(p.v === 'dots'){ ctx.fillStyle = ink; [.42,.58].forEach(x => { ctx.beginPath(); ctx.arc(x,.55,.026,0,6.283); ctx.fill(); }); }
+    else if(p.v === 'big'){ eye(.42,.54,.052); eye(.58,.54,.052); }
+    else if(p.v === 'sleepy'){ ctx.strokeStyle = ink; ctx.lineWidth = .014; ctx.lineCap = 'round'; [.42,.58].forEach(x => { ctx.beginPath(); ctx.arc(x,.53,.035,.15*Math.PI,.85*Math.PI); ctx.stroke(); }); }
+    else if(p.v === 'cyclops'){ eye(.5,.53,.075); }
+    else if(p.v === 'shades'){ ctx.fillStyle = '#111114'; ctx.beginPath(); rr(ctx,.34,.5,.13,.08,.03); ctx.fill(); ctx.beginPath(); rr(ctx,.53,.5,.13,.08,.03); ctx.fill(); ctx.fillRect(.47,.525,.06,.012); ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.fillRect(.36,.515,.03,.012); ctx.fillRect(.55,.515,.03,.012); }
+    return;
+  }
+  if(p.t === 'detail'){
+    if(p.v === 'antenna'){ ctx.strokeStyle = env.body; ctx.lineWidth = .014; ctx.beginPath(); ctx.moveTo(.5,.32); ctx.lineTo(.5,.2); ctx.stroke(); ctx.fillStyle = '#F45B33'; ctx.beginPath(); ctx.arc(.5,.19,.026,0,6.283); ctx.fill(); }
+    else if(p.v === 'halo'){ ctx.strokeStyle = '#E8B63E'; ctx.lineWidth = .014; ctx.beginPath(); ctx.ellipse(.5,.21,.12,.035,0,0,6.283); ctx.stroke(); }
+    else if(p.v === 'crown'){ ctx.fillStyle = '#E8B63E'; ctx.beginPath(); ctx.moveTo(.39,.3); ctx.lineTo(.39,.2); ctx.lineTo(.445,.25); ctx.lineTo(.5,.18); ctx.lineTo(.555,.25); ctx.lineTo(.61,.2); ctx.lineTo(.61,.3); ctx.closePath(); ctx.fill(); }
+    else if(p.v === 'flower'){ ctx.fillStyle = '#FFFFFF'; for(let i=0;i<5;i++){ const a = i/5*6.283; ctx.beginPath(); ctx.arc(.68+.032*Math.cos(a), .3+.032*Math.sin(a), .024, 0, 6.283); ctx.fill(); } ctx.fillStyle = '#E8B63E'; ctx.beginPath(); ctx.arc(.68,.3,.02,0,6.283); ctx.fill(); }
+    else if(p.v === 'bolt'){ ctx.fillStyle = '#F5D23B'; ctx.beginPath(); ctx.moveTo(.71,.17); ctx.lineTo(.65,.29); ctx.lineTo(.7,.29); ctx.lineTo(.67,.38); ctx.lineTo(.76,.25); ctx.lineTo(.71,.25); ctx.lineTo(.74,.17); ctx.closePath(); ctx.fill(); }
+    return;
+  }
+  if(p.t === 'light'){
+    if(p.v === 'sparks'){ const r = rng(idx*31+7); ctx.fillStyle = '#FFFFFF'; const base = ctx.globalAlpha; for(let i=0;i<7;i++){ const x = .1+r()*.8, y = .08+r()*.84, s = .012+r()*.02; ctx.globalAlpha = base*(.4+.6*Math.abs(Math.sin(t*1.3+i))); star4(ctx, x, y, s); } ctx.globalAlpha = base; }
+    else if(p.v === 'glow'){ const g = ctx.createRadialGradient(.5,.56,0,.5,.56,.48); g.addColorStop(0,'rgba(255,255,255,.75)'); g.addColorStop(1,'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.fillRect(0,0,1,1); }
+    else if(p.v === 'orbit'){ ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = .008; ctx.beginPath(); ctx.ellipse(.5,.56,.4,.13,-.35,0,6.283); ctx.stroke(); const a = t*1.2, x = .4*Math.cos(a), y = .13*Math.sin(a), c = Math.cos(-.35), s = Math.sin(-.35); ctx.fillStyle = '#FFFFFF'; ctx.beginPath(); ctx.arc(.5 + x*c - y*s, .56 + x*s + y*c, .022, 0, 6.283); ctx.fill(); }
+  }
+}
+
+/* ---------- algorithmic styles (pixel space) ---------- */
+const ALGO = {
+  orbit(ctx, w, h, t, a, r){
+    ctx.fillStyle = a.c1; ctx.fillRect(0,0,w,h);
+    const cx = w/2, cy = h/2, rings = 3 + Math.floor(r()*3);
+    for(let i=0;i<rings;i++){ const rad = w*(.16+i*.075), k = .3+r()*.4, tilt = r()*Math.PI, sp = (.3+r()*.6)*(r()<.5?-1:1), ph = r()*6.28;
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(tilt); ctx.strokeStyle = rgba(a.c2, .55); ctx.lineWidth = Math.max(1, w*.004);
+      ctx.beginPath(); ctx.ellipse(0,0,rad,rad*k,0,0,6.283); ctx.stroke();
+      const an = t*sp + ph; ctx.fillStyle = a.c2; ctx.beginPath(); ctx.arc(rad*Math.cos(an), rad*k*Math.sin(an), w*.016, 0, 6.283); ctx.fill(); ctx.restore(); }
+    ctx.fillStyle = a.c2; ctx.beginPath(); ctx.arc(cx, cy, w*.07*(1+.05*Math.sin(t*2)), 0, 6.283); ctx.fill();
+  },
+  waves(ctx, w, h, t, a, r){
+    ctx.fillStyle = a.c1; ctx.fillRect(0,0,w,h);
+    const n = 13, st = w/n, k1 = .3+r()*.5, k2 = .2+r()*.5;
+    for(let i=0;i<n;i++) for(let j=0;j<n;j++){ const v = Math.sin(i*k1 + t) + Math.cos(j*k2 - t*.8);
+      ctx.fillStyle = mixc(a.c1, a.c2, Math.min(1, Math.max(.15, (v+2)/4)));
+      ctx.beginPath(); ctx.arc(st*(i+.5), st*(j+.5), Math.max(.5, st*.18*(1.2+.7*v)), 0, 6.283); ctx.fill(); }
+  },
+  stripes(ctx, w, h, t, a, r){
+    ctx.fillStyle = a.c1; ctx.fillRect(0,0,w,h);
+    const n = 6 + Math.floor(r()*6), ang = r()*Math.PI;
+    ctx.save(); ctx.translate(w/2, h/2); ctx.rotate(ang);
+    for(let i=0;i<n;i++){ const y = (i/n - .5)*w*1.4, hh = w*1.4/n*(.35+.25*Math.sin(t*1.2 + i*.8));
+      ctx.fillStyle = i%2 ? a.c2 : mixc(a.c1, a.c2, .45); ctx.fillRect(-w, y, w*2, hh); }
+    ctx.restore();
+  }
+};
+
+/* ---------- token renderer ---------- */
+const imgCache = new Map();
+function getImg(src){ if(!src) return null; let im = imgCache.get(src); if(!im){ im = new Image(); im.src = src; imgCache.set(src, im); } return im.complete && im.naturalWidth ? im : null; }
+function drawImgAnim(ctx, W, H, tk, src, anim){
+  ctx.save(); ctx.scale(W, W); ctx.fillStyle = '#E9E9EC'; ctx.fillRect(0,0,1,1);
+  const im = getImg(src);
+  if(im){
+    ctx.translate(.5, .5);
+    if(anim === 'float') ctx.translate(0, Math.sin(tk*1.5)*.02);
+    if(anim === 'pulse'){ const s = 1 + .035*Math.sin(tk*2.4); ctx.scale(s, s); }
+    if(anim === 'sway') ctx.rotate(Math.sin(tk*1.3)*.05);
+    if(anim && anim !== 'none' && anim !== 'shine') ctx.scale(1.08, 1.08);
+    const sc = Math.max(1/im.naturalWidth, 1/im.naturalHeight), iw = im.naturalWidth*sc, ih = im.naturalHeight*sc;
+    ctx.drawImage(im, -iw/2, -ih/2, iw, ih);
+  }
+  ctx.restore();
+  if(im && anim === 'shine'){
+    const sh = ((tk*.3) % 1.8) - .4, g = ctx.createLinearGradient(W*sh, 0, W*(sh+.35), H);
+    g.addColorStop(0,'rgba(255,255,255,0)'); g.addColorStop(.5,'rgba(255,255,255,.35)'); g.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.save(); ctx.globalCompositeOperation = 'screen'; ctx.fillStyle = g; ctx.fillRect(0,0,W,H); ctx.restore();
+  }
+}
+function drawToken(ctx, W, H, t, art, dna, idx){
+  const tk = t + (idx*1.37) % 6;
+  if(art.mode === 'algo'){ (ALGO[art.algo.style] || ALGO.orbit)(ctx, W, H, tk, art.algo, rng(idx*7919 + 13)); return; }
+  if(art.mode === 'files'){ const f = (art.files || [])[idx-1]; drawImgAnim(ctx, W, H, tk, f && f.src, art.anim); return; }
+  if(dna && !Array.isArray(dna) && dna.l !== undefined){ const g = (art.legends || [])[dna.l]; drawImgAnim(ctx, W, H, tk, g && g.src, 'float'); return; }
+  dna = dna || [];
+  ctx.save(); ctx.scale(W, W);
+  ctx.fillStyle = '#E9E9EC'; ctx.fillRect(0,0,1,1);
+  let bgc = '#E6E0D4';
+  art.layers.forEach((L, li) => { const v = L.variants[dna[li]]; if(v && v.kind === 'proc' && v.p.t === 'bg') bgc = v.p.c; });
+  const lightBody = lum(bgc) < .4;
+  const env = {t:tk, idx, body: lightBody ? mixc(bgc, '#FFFFFF', .8) : mixc(bgc, '#000000', .62), lightBody};
+  let dy = 0;
+  art.layers.forEach((L, li) => {
+    const v = L.variants[dna[li]]; if(!v) return;
+    ctx.save();
+    const ph = tk + li*.9;
+    if(L.anim === 'float') dy += Math.sin(ph*1.5)*.022;
+    ctx.translate(0, dy);
+    const px = .5, py = .56;
+    if(L.anim === 'sway'){ ctx.translate(px, py); ctx.rotate(Math.sin(ph*1.3)*.12); ctx.translate(-px, -py); }
+    if(L.anim === 'spin'){ ctx.translate(px, py); ctx.rotate(ph*.8); ctx.translate(-px, -py); }
+    if(L.anim === 'pulse'){ const s = 1 + .05*Math.sin(ph*2.4); ctx.translate(px, py); ctx.scale(s, s); ctx.translate(-px, -py); }
+    if(L.anim === 'blink'){ const f = ((ph*.45) % 1 + 1) % 1; const s = f < .06 ? .12 : 1; ctx.translate(0, .54); ctx.scale(1, s); ctx.translate(0, -.54); }
+    if(L.anim === 'shimmer'){ ctx.globalAlpha = .55 + .45*Math.sin(ph*2.2); }
+    if(v.kind === 'img'){ const im = getImg(v.src); if(im) ctx.drawImage(im, 0, 0, 1, 1); }
+    else drawProc(ctx, v.p, env);
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+/* ---------- generation ---------- */
+function combos(layers){ return layers.reduce((p, L) => p * Math.max(1, L.variants.length), 1); }
+function pick(r, vars){ const tot = vars.reduce((s, v) => s + v.w, 0); let x = r()*tot; for(let i=0;i<vars.length;i++){ x -= vars[i].w; if(x < 0) return i; } return vars.length - 1; }
+function genDNA(layers, count, seed){
+  const r = rng(seed), seen = new Set(), out = []; let tries = 0;
+  if(!layers.some(L => L.variants.length) || count <= 0) return out;
+  while(out.length < count && tries < count*60){
+    tries++;
+    const d = layers.map(L => L.variants.length ? pick(r, L.variants) : -1);
+    const k = d.join('.');
+    if(!seen.has(k)){ seen.add(k); out.push(d); }
+  }
+  return out;
+}
+function perLayerNeed(n, L){ return Math.max(2, Math.ceil(Math.pow(Math.max(1, n*1.5), 1/Math.max(1, L)))); }
+
+/* ---------- state ---------- */
+const KEY = 'stash-demo-v4';
+function newDraft(){ return {name:'Формы', symbol:'FORM', supply:1000, price:3, royalty:5, mode:'layers', seed:7, previewOff:0,
+  algo:{style:'orbit', c1:'#16161C', c2:'#E8E4DA'}, layers:exampleLayers(), files:[], fileAnim:'float', legends:[], dna:null, edits:0, galPage:0,
+  fill:{on:true, pct:30, tokOn:false, tokAddr:'', tokSym:'', tokPer:1000}, release:'list'}; }
+function sampleCols(){
+  const a = newDraft();
+  const formy = {id:'formy', name:'Формы', symbol:'FORM', supply:3333, minted:1204, price:3, royalty:5, creator:'formy.testnet', sample:true, release:'list',
+    art:{mode:'layers', layers:a.layers, legends:[]}, dna:genDNA(a.layers, 3333, 7), fill:{on:true, pct:30, near:0.9, tokOn:true, tokAddr:'пример', tokSym:'FORM', tokPer:500}};
+  const orb = {id:'orbits', name:'Орбиты', symbol:'ORB', supply:1000, minted:312, price:5, royalty:6, creator:'orbits.testnet', sample:true, release:'list',
+    art:{mode:'algo', algo:{style:'orbit', c1:'#101826', c2:'#9FC1FF'}}, dna:null, fill:{on:true, pct:40, tokOn:false}};
+  return [formy, orb];
+}
+function fresh(){ return {wallet:null, near:100, tokens:{}, collections:sampleCols(), owned:[], draft:newDraft(), gen:null}; }
+function load(){ try{ const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if(s && s.collections && s.draft) return s; }catch(e){} return null; }
+let S = load() || fresh();
+let saveWarned = false;
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){ if(!saveWarned){ saveWarned = true; toast('Картинок много: после перезагрузки страницы демо их не запомнит'); } } }
+const col = id => S.collections.find(c => c.id === id);
+const nftById = id => S.owned.find(n => n.id === id);
+const fillNear = c => c.fill && c.fill.on ? r2(c.price * c.fill.pct / 100) : 0;
+let editIdx = null;
+
+/* ---------- draft helpers ---------- */
+function draftArt(){ const d = S.draft; return {mode:d.mode, layers:d.layers, algo:d.algo, files:d.files, anim:d.fileAnim, legends:d.legends}; }
+function draftAll(){ const d = S.draft; return (d.dna || []).concat(d.legends.map((_, i) => ({l:i}))); }
+function draftSupply(){ const d = S.draft; return d.mode === 'files' ? d.files.length : (Math.floor(num(d.supply)) || 0); }
+function rebuildDNA(){
+  const d = S.draft;
+  if(d.mode !== 'layers'){ d.dna = null; return; }
+  const n = Math.max(0, Math.min(10000, draftSupply()) - d.legends.length);
+  const had = d.edits; d.dna = genDNA(d.layers, Math.min(n, combos(d.layers)), d.seed); d.edits = 0; editIdx = null;
+  if(had) toast('Сборка обновлена, ручные правки сброшены');
+}
+function dnaKey(x){ return Array.isArray(x) ? x.join('.') : 'L' + x.l; }
+
+/* ---------- canvases ---------- */
+let canvases = [];
+function collect(){ canvases = $$('canvas[data-k]'); }
+function resolve(c){
+  const k = c.dataset.k, i = +c.dataset.i;
+  if(k === 'draft' || k === 'gal' || k === 'edit'){
+    const d = S.draft, art = draftArt();
+    if(d.mode === 'algo') return {art, dna:[], idx: k === 'draft' ? d.previewOff + i + 1 : i + 1};
+    if(d.mode === 'files'){ const n = d.files.length || 1; return {art, dna:[], idx: (k === 'draft' ? (d.previewOff + i) % n : i) + 1}; }
+    const all = draftAll(); if(!all.length) return {art, dna:[], idx:1};
+    const j = k === 'draft' ? (d.previewOff + i*37) % all.length : k === 'edit' ? (editIdx ?? 0) : i;
+    return {art, dna:all[j], idx:j+1};
+  }
+  if(k === 'gthumb'){ const L = genLayers(), li = +c.dataset.l, vi = +c.dataset.v; const dna = L.map((x, j) => j === li ? vi : (x.variants.length ? (x.name === 'Головной убор' ? 0 : 0) : -1)); return {art:{mode:'layers', layers:L}, dna, idx:li*10+vi}; }
+  if(k === 'gprev'){ return {art:{mode:'layers', layers:genLayers()}, dna:genPrevDNA[i] || [], idx:i+1}; }
+  if(k === 'thumb'){ const d = S.draft, li = +c.dataset.l, vi = +c.dataset.v; const dna = d.layers.map((L, j) => j === li ? vi : (L.variants.length ? 0 : -1)); return {art:{mode:'layers', layers:d.layers}, dna, idx:li*10+vi}; }
+  if(k === 'file'){ const d = S.draft; return {art:{mode:'files', files:d.files, anim:d.fileAnim}, dna:[], idx:i+1}; }
+  if(k === 'leg'){ const d = S.draft; return {art:{mode:'layers', layers:d.layers, legends:d.legends}, dna:{l:i}, idx:i+1}; }
+  const cl = col(k); if(!cl) return null;
+  return {art:cl.art, dna:cl.dna ? cl.dna[i-1] : [], idx:i};
+}
+function frame(ts){
+  const t = reduced ? 3 : ts/1000, vh = innerHeight, dpr = Math.min(2, devicePixelRatio || 1);
+  for(const c of canvases){
+    if(!c.isConnected) continue;
+    const b = c.getBoundingClientRect(); if(b.bottom < 0 || b.top > vh || !b.width) continue;
+    const W = Math.round(b.width*dpr), H = Math.round(b.height*dpr);
+    if(c.width !== W || c.height !== H){ c.width = W; c.height = H; }
+    const res = resolve(c); if(!res) continue;
+    const ctx = c.getContext('2d'); ctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha = 1;
+    try{ drawToken(ctx, W, H, t, res.art, res.dna, res.idx); }catch(e){}
+  }
+  requestAnimationFrame(frame);
+}
+const cv = (k, i, extra='') => `<canvas data-k="${esc(k)}" data-i="${i}" ${extra} role="img" aria-label="NFT"></canvas>`;
+
+/* ---------- toast, wallet ---------- */
+let tt;
+function toast(m){ const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('show'), 2600); }
+function connect(){ if(S.wallet) return; S.wallet = 'you.testnet'; save(); renderWallet(); toast('Демо-кошелёк подключён'); }
+function renderWallet(){
+  const w = $('#wallet');
+  if(S.wallet){ w.innerHTML = `<span class="wpill wname"><svg class="svgi" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="4"></rect><circle cx="16" cy="12.5" r="1.5"></circle></svg>${esc(S.wallet)}</span><span class="wpill">${fmt(S.near)} NEAR</span><button class="btn btn-icon" id="out" type="button" aria-label="Выйти">${IC.x}</button>`;
+    $('#out').onclick = () => { S.wallet = null; save(); renderWallet(); route(); }; }
+  else { w.innerHTML = `<button class="btn btn-main btn-sm" id="in" type="button">Подключить кошелёк</button>`; $('#in').onclick = () => { connect(); route(); }; }
+}
+
+/* ---------- views ---------- */
+function colCard(c){
+  const tag = c.sample ? 'пример' : c.release === 'keep' ? 'у создателя' : 'ваша';
+  const sold = c.minted >= c.supply;
+  const btn = c.release === 'keep' ? '<span class="pricebtn dim">Продаётся создателем</span>' : sold ? '<span class="pricebtn dim">Разобрано</span>' : `<span class="pricebtn">${fmt(c.price)} NEAR</span>`;
+  return `<a class="card" href="#col-${esc(c.id)}"><div class="art">${cv(c.id, Math.max(1, Math.min(c.supply, c.minted || 1)))}<span class="num">${tag}</span>${c.fill && c.fill.on ? '<span class="flag">токены внутри</span>' : ''}</div>
+    <div class="meta"><span>${esc(c.name)}</span><span>${fmt(c.supply,0)} шт</span></div>${insideLine(c)}${btn}</a>`;
+}
+function colRow(c){
+  const pct = Math.round(c.minted / c.supply * 100);
+  return `<a class="crow" href="#col-${esc(c.id)}"><div class="av"><div class="art">${cv(c.id, Math.max(1, Math.min(c.supply, c.minted || 1)))}</div></div>
+    <div class="mid"><b>${esc(c.name)}</b><span>${c.release === 'keep' ? 'у создателя' : fmt(c.price) + ' NEAR'} · ${fmt(c.supply,0)} шт${c.fill && c.fill.on ? ' · <span class="tagp">внутри ' + insideText(c) + '</span>' : ''}</span></div>
+    <div class="end"><b>${pct}%</b><span>сминчено</span></div></a>`;
+}
+let filt = 'all', query = '';
+const FILTERS = [['all','Все'],['fill','Токенизированные'],['layers','Из слоёв'],['files','Свои картинки'],['algo','Алгоритм']];
+function insideText(c){ const n = c.fill.near ?? fillNear(c); return fmt(n) + ' NEAR' + (c.fill.tokOn ? ' + ' + fmt(c.fill.tokPer,0) + ' ' + esc(c.fill.tokSym) : ''); }
+function insideLine(c){ return c.fill && c.fill.on ? `<span class="inside">${IC.coins}Внутри ${insideText(c)}</span>` : '<span class="inside dim">Без токенов внутри</span>'; }
+function filtered(){
+  const q = query.trim().toLowerCase();
+  return S.collections.filter(c => (filt === 'all' || (filt === 'fill' ? c.fill && c.fill.on : c.art.mode === filt)) && (!q || c.name.toLowerCase().includes(q) || c.symbol.toLowerCase().includes(q)));
+}
+
+function vHome(){
+  const f = col('formy');
+  const s1 = f ? `<a class="slide dark" href="#col-formy">
+      <div class="strip" aria-hidden="true">${[11,212,37,904,1500].map(i => `<div class="art">${cv('formy', i)}</div>`).join('')}</div><div class="shade"></div>
+      <span class="label" style="color:#CFCBD3">Токенизированная коллекция · пример</span>
+      <h2 class="d-l">Формы</h2>
+      <div class="glass"><div><span>Цена</span><b>${fmt(f.price)} NEAR</b></div><div><span>Внутри каждой</span><b>${insideText(f)}</b></div><div><span>Сминчено</span><b>${fmt(f.minted,0)} / ${fmt(f.supply,0)}</b></div></div>
+    </a>` : '';
+  return `
+  <section class="sec" style="padding-top:4px">
+    <div class="slides" id="slides">
+      <div class="slide gold"><div class="deco"></div>
+        <span class="label" style="color:rgba(26,22,15,.6)">Токенизированные NFT на NEAR</span>
+        <h1 class="d-xl" style="max-width:15ch">NFT, внутри которых лежат токены</h1>
+        <p class="lead">Каждая NFT хранит NEAR или ваш токен. Владелец забирает их, когда захочет, поэтому дешевле содержимого NFT не станет.</p>
+        <div class="row"><a class="btn" href="#create" style="background:var(--on-gold);color:var(--gold1)">Создать коллекцию ${IC.arrow}</a><a class="btn" href="#guide" style="background:transparent;border-color:rgba(26,22,15,.35);color:var(--on-gold)">Как это работает</a></div>
+      </div>
+      ${s1}
+      <a class="slide green" href="#gen">
+        <span class="label" style="color:#7FB8A3">Всё в одном месте</span>
+        <h2 class="d-l" style="max-width:16ch">Генератор частей тела</h2>
+        <p class="lead">Сгенерируйте фоны, тела, глаза и головные уборы для будущей коллекции и сразу соберите из них тысячи NFT.</p>
+        <span class="tagp" style="color:#BFE6D6">Открыть генератор ${IC.arrow}</span>
+      </a>
+    </div>
+    <div class="dots" id="dots" aria-hidden="true">${(f ? [0,1,2] : [0,1]).map(i => `<i class="${i ? '' : 'on'}"></i>`).join('')}</div>
+  </section>
+
+  <section class="sec">
+    <div class="row" style="justify-content:space-between;align-items:flex-end;margin-bottom:16px"><div><p class="label">Как это работает</p><h2 class="d-l">Токенизированная NFT за три шага</h2></div></div>
+    <div class="flow">
+      <div class="fcard"><span class="nb">1</span><h3 class="d-m">Вы решаете, что внутри</h3><p>Например, 30% цены минта в NEAR и 500 ваших токенов в каждую NFT.</p></div>
+      <div class="fcard"><span class="nb">2</span><h3 class="d-m">Покупатель минтит</h3><p>Платит 10 NEAR: 7 получаете вы, 3 остаются внутри его NFT.</p></div>
+      <div class="fcard"><span class="nb">3</span><h3 class="d-m">Владелец решает</h3><p>Забирает токены в кошелёк или продаёт NFT вместе с ними.</p></div>
+    </div>
+    <div class="box" style="margin-top:12px">
+      <span class="label">Цена минта 10 NEAR</span>
+      <div class="tbar" aria-label="Из 10 NEAR 7 получает создатель, 3 остаются внутри NFT"><div class="a">7 NEAR создателю</div><div class="b">3 внутри</div></div>
+      <p class="hint">Долю выбирает создатель. Пока NFT выставлена на продажу, забрать токены нельзя: покупатель получает ровно то, что видит.</p>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div style="margin-bottom:16px"><p class="label">Зачем это нужно</p><h2 class="d-l">Где пригодятся токены внутри NFT</h2></div>
+    <div class="kinds">
+      <div class="kind"><span class="ic">${IC.coins}</span><h3 class="d-m">Продвижение токена</h3><p>В каждой NFT лежит ваш мемкоин, например с Nearly или JustHoot. Купил NFT — стал держателем токена.</p></div>
+      <div class="kind"><span class="ic">${IC.spark}</span><h3 class="d-m">Награды держателям</h3><p>Проект докладывает токены прямо в NFT, без рассылок и списков кошельков.</p></div>
+      <div class="kind"><span class="ic">${IC.play}</span><h3 class="d-m">Игры и подарки</h3><p>Персонаж хранит своё золото, подарочная NFT — деньги внутри. Продаёшь вместе с содержимым.</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div style="margin-bottom:16px"><p class="label">Всё в одном месте</p><h2 class="d-l">От идеи до выпуска</h2></div>
+    <div class="flow">
+      <a class="fcard" href="#gen" style="text-decoration:none"><span class="nb">1</span><h3 class="d-m">Генератор частей</h3><p>Фоны, тела, глаза, рты и головные уборы в одной палитре.</p></a>
+      <a class="fcard" href="#create" style="text-decoration:none"><span class="nb">2</span><h3 class="d-m">Конструктор и анимация</h3><p>Слои собираются в 333, 1 000 или 10 000 разных NFT и оживают.</p></a>
+      <a class="fcard" href="#create" style="text-decoration:none"><span class="nb">3</span><h3 class="d-m">Токены внутри</h3><p>NEAR и ваш токен в каждой NFT. Можно выключить и выпустить обычную коллекцию.</p></a>
+      <a class="fcard" href="#guide" style="text-decoration:none"><span class="nb">4</span><h3 class="d-m">Выпуск</h3><p>Продавайте на Stash или отчеканьте всё себе и идите на другие маркеты.</p></a>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:16px"><h2 class="d-l">Коллекции</h2><a class="btn btn-line btn-sm" href="#explore">Все ${IC.arrow}</a></div>
+    <div class="rows">${S.collections.slice(0, 6).map(colRow).join('')}</div>
+  </section>`;
+}
+function bindHome(){
+  const sl = $('#slides'), dots = $$('#dots i'); if(!sl) return;
+  sl.addEventListener('scroll', () => { const kids = [...sl.children]; let best = 0, bd = 1e9;
+    kids.forEach((k, i) => { const d = Math.abs(k.offsetLeft - sl.offsetLeft - sl.scrollLeft); if(d < bd){ bd = d; best = i; } });
+    dots.forEach((d, i) => d.classList.toggle('on', i === best)); }, {passive:true});
+}
+
+function vGuide(){
+  const pr = [333, 1000, 3333, 10000].map(n => { const k = perLayerNeed(n, 5); return `<tr><td class="mono">${fmt(n,0)}</td><td class="mono">${k}</td><td class="mono">${fmt(Math.pow(k,5),0)}</td></tr>`; }).join('');
+  return `<section class="split">
+    <div class="b stick" style="flex:0 1 220px">
+      <p class="label">Как это работает</p>
+      <nav class="toc" aria-label="Оглавление">
+        <a href="#guide" data-jump="g1">Что такое NFT</a><a href="#guide" data-jump="g4">Токенизированные NFT</a>
+        <a href="#guide" data-jump="g5">Откуда токены внутри</a><a href="#guide" data-jump="g2">Как собрать 333 или 3000 NFT</a>
+        <a href="#guide" data-jump="g2b">Три способа делать картинки</a><a href="#guide" data-jump="g3">Анимация</a>
+        <a href="#guide" data-jump="g8">Сколько стоит в блокчейне</a><a href="#guide" data-jump="g9">Продавать здесь или забрать себе</a>
+        <a href="#guide" data-jump="g6">Как это использовать</a><a href="#guide" data-jump="g7">Безопасность</a>
+      </nav>
+    </div>
+    <div class="a" style="flex:1 1 560px">
+      <div class="gsec" id="g1"><h1 class="d-l">Что такое NFT</h1><div class="prose">
+        <p>NFT — это запись в блокчейне: <b>«предмет №42 из коллекции „Формы“ принадлежит такому-то кошельку»</b>. Подделать или переписать эту запись нельзя.</p>
+        <p>Картинка — это витрина предмета. Скопировать картинку может кто угодно, но владельцем №42 в блокчейне останетесь вы. Как с подписанной картиной: репродукций много, оригинал один.</p>
+        <p><b>Коллекция</b> — набор таких предметов в одном стиле. Размер выбираете вы: 333, 1 000, 3 333 — сколько угодно до 10 000.</p></div></div>
+
+      <div class="gsec" id="g4"><h2 class="d-l">Токенизированные NFT</h2><div class="prose">
+        <p><b>Токенизированная NFT — это NFT, внутри которой лежат токены:</b> NEAR или любой токен NEAR, например ваш мемкоин. Здесь это называется «наполнение».</p>
+        <p>Представьте подарочную коробку. Обычная NFT — это пустая красивая коробка: она стоит столько, сколько за неё кто-то готов заплатить. Пропал интерес — коробка стоит ноль.</p>
+        <p>NFT с наполнением — это <b>коробка, внутри которой лежат монеты</b>. Даже если коробка никому не нужна, монеты можно достать. Поэтому дешевле содержимого такая NFT не станет.</p>
+        <p>Монеты принадлежат тому, кто сейчас владеет NFT. Продали NFT — новый владелец получил и картинку, и монеты внутри.</p></div>
+        <div class="tw"><table class="cmp">
+          <tr><th></th><th>Обычная NFT</th><th>NFT с наполнением</th></tr>
+          <tr><td class="muted">Сколько стоит</td><td>Сколько готовы заплатить</td><td>Не меньше того, что внутри</td></tr>
+          <tr><td class="muted">Если интерес пропал</td><td>Может стоить ноль</td><td>Можно забрать содержимое</td></tr>
+          <tr><td class="muted">Что получает покупатель</td><td>Картинку и право владения</td><td>Картинку, право владения и монеты</td></tr>
+        </table></div></div>
+
+      <div class="gsec" id="g5"><h2 class="d-l">Откуда токены внутри</h2><div class="prose">
+        <p><b>1. Из цены минта.</b> NFT стоит 10 NEAR. Создатель ставит «30% внутрь»: 7 NEAR получает он, 3 NEAR остаются внутри NFT у покупателя.</p>
+        <p><b>2. Вашим токеном.</b> Например, мемкоином с Nearly или JustHoot: его можно положить в каждую NFT.</p>
+        <p><b>3. Позже.</b> Создатель или сам владелец может докладывать в NFT в любой момент, например как награду.</p>
+        <p>Если вы чеканите всю коллекцию себе, цены минта нет, поэтому наполнение кладёте вы сами.</p></div></div>
+
+      <div class="gsec" id="g2"><h2 class="d-l">Как собрать 333 или 3000 NFT</h2><div class="prose">
+        <p>Рисовать каждую картинку не нужно. Картинку делят на <b>слои</b>, как бумажную куклу: фон, фигура, глаза, шапка. Для каждого слоя рисуют несколько вариантов, а сайт перебирает сочетания.</p>
+        <p>Вы указываете, сколько NFT хотите, и конструктор подсказывает, сколько вариантов нарисовать. Считаем с запасом в полтора раза, чтобы работала редкость:</p></div>
+        <div class="tw"><table class="cmp"><tr><th>NFT в коллекции</th><th>Вариантов в каждом из 5 слоёв</th><th>Возможных сочетаний</th></tr>${pr}</table></div>
+        <div class="prose"><p>Например, для 1 000 NFT хватит 5 фонов, 5 фигур, 5 глаз, 5 шапок и 5 аксессуаров. Слоёв больше — вариантов в каждом нужно меньше.</p>
+        <p>Каждому варианту можно задать редкость. Если корона встречается редко, NFT с короной ценнее. Сайт следит, чтобы все NFT были разными.</p>
+        <p><b>Что нужно от вас:</b> картинки слоёв в формате PNG одного размера с прозрачным фоном. Их можно нарисовать самому, заказать художнику или собрать во встроенном генераторе частей.</p></div></div>
+
+      <div class="gsec" id="g2b"><h2 class="d-l">Три способа делать картинки</h2><div class="prose">
+        <p><b>1. Каждую NFT сами.</b> Загружаете готовые картинки: одна картинка — одна NFT. Подходит для небольших коллекций.</p>
+        <p><b>2. Из слоёв с ручной правкой.</b> Сайт собирает коллекцию случайно, а вы листаете результат и меняете любую NFT: другой фон, другие глаза.</p>
+        <p><b>3. Смешанно.</b> Основная часть собирается из слоёв, плюс несколько «легендарок» 1 из 1, которые вы рисуете целиком сами. При запуске они случайно распределяются по номерам коллекции.</p></div></div>
+
+      <div class="gsec" id="g3"><h2 class="d-l">Анимация</h2><div class="prose">
+        <p><b>Да, ваша коллекция анимируется по вашим же слоям.</b> Вы загружаете обычные неподвижные картинки и для каждого слоя выбираете движение: парит, качается, пульсирует, вращается, моргает, мерцает. Сайт двигает слои по отдельности, и картинка оживает.</p>
+        <p>Если слой «парит», всё, что выше него, двигается вместе с ним: глаза не уплывут с лица. У каждой NFT движение чуть сдвинуто по времени.</p>
+        <p>Готовые картинки без слоёв тоже можно оживить, но только целиком: парение, покачивание, пульс или блик.</p>
+        <p>При настоящем запуске каждая NFT сохранится как анимированный файл и загрузится в постоянное хранилище (IPFS или Arweave). Маркеты показывают уже этот файл.</p></div></div>
+
+      <div class="gsec" id="g8"><h2 class="d-l">Сколько стоит в блокчейне</h2><div class="prose">
+        <p>В NEAR за хранение данных в сети платят небольшой залог. Поэтому у коллекции два вида расходов:</p>
+        <p><b>Запуск контракта коллекции</b> — один раз, около 3–5 NEAR. Платит создатель.</p>
+        <p><b>Чеканка каждой NFT</b> — около ${fmt(MINT_COST)} NEAR за штуку. Кто платит, зависит от способа выпуска (ниже). Например, 1 000 NFT — около ${fmt(1000*MINT_COST)} NEAR, 3 333 NFT — около ${fmt(3333*MINT_COST)} NEAR.</p>
+        <p>Цифры предварительные: точную стоимость покажем после написания контракта, она зависит от размера данных каждой NFT.</p></div></div>
+
+      <div class="gsec" id="g9"><h2 class="d-l">Продавать здесь или забрать себе</h2><div class="prose">
+        <p>При запуске вы выбираете один из двух вариантов:</p></div>
+        <div class="tw"><table class="cmp">
+          <tr><th></th><th>Продавать на Stash</th><th>Отчеканить всё себе</th></tr>
+          <tr><td class="muted">Как работает</td><td>NFT чеканятся, когда их покупают</td><td>Все NFT сразу появляются в вашем кошельке</td></tr>
+          <tr><td class="muted">Кто платит за чеканку</td><td>Покупатель, при покупке</td><td>Вы, сразу за всю коллекцию</td></tr>
+          <tr><td class="muted">Где продавать</td><td>Страница минта на Stash</td><td>Любые маркеты NEAR, раздачи, OTC</td></tr>
+          <tr><td class="muted">Наполнение</td><td>Берётся из цены минта</td><td>Кладёте вы сами</td></tr>
+        </table></div></div>
+
+      <div class="gsec" id="g6"><h2 class="d-l">Как это использовать</h2>
+        <div class="uses">
+          <div class="use"><b>Продвижение токена</b><p>В каждой NFT лежит ваш мемкоин. Купил NFT — стал держателем токена.</p></div>
+          <div class="use"><b>Награды сообществу</b><p>Проект докладывает токены прямо в NFT держателей, без рассылок и списков кошельков.</p></div>
+          <div class="use"><b>Подарки</b><p>NFT как подарочная карта: красивая картинка и деньги внутри.</p></div>
+          <div class="use"><b>Игры</b><p>Персонаж-NFT хранит своё золото. Продаёшь персонажа вместе с ним.</p></div>
+          <div class="use"><b>Сундуки</b><p>Чем реже NFT, тем больше внутри. Это идея для следующей версии.</p></div>
+          <div class="use"><b>Билеты с кешбэком</b><p>Билет на событие, внутри которого лежит часть цены. Сходил — забрал.</p></div>
+        </div></div>
+
+      <div class="gsec" id="g7"><h2 class="d-l">Безопасность</h2><div class="prose">
+        <p><b>Продавец не может опустошить NFT перед продажей.</b> Пока NFT выставлена на продажу, достать содержимое нельзя.</p>
+        <p>NFT сделаны по стандарту NEAR (NEP-171), поэтому видны в кошельках и маркетах NEAR. Содержимое любой NFT можно проверить по ссылке на её страницу.</p>
+        <p>Перед запуском в основной сети контракт, который хранит чужие деньги, нужно проверить независимым аудитом.</p></div></div>
+    </div>
+  </section>`;
+}
+
+function vExplore(){
+  return `<section>
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:16px"><h1 class="d-l">Коллекции</h1><a class="btn btn-main btn-sm" href="#create">Создать</a></div>
+    <div class="chips" role="group" aria-label="Фильтр" style="margin-bottom:18px">${FILTERS.map(([k, l]) => `<button type="button" data-f="${k}" aria-pressed="${filt === k}">${l}</button>`).join('')}</div>
+    <div id="exp-list"></div></section>`;
+}
+function renderExplore(){
+  const box = $('#exp-list'); if(!box) return;
+  const list = filtered();
+  box.innerHTML = list.length ? `<div class="cards">${list.map(colCard).join('')}</div>` : `<div class="empty"><p class="lead">Ничего не нашлось${query ? ` по запросу «${esc(query)}»` : ''}.</p></div>`;
+  $$('[data-f]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === filt)));
+  collect();
+}
+function bindExplore(){ $$('[data-f]').forEach(b => b.onclick = () => { filt = b.dataset.f; renderExplore(); }); renderExplore(); }
+
+function vCollection(id){
+  const c = col(id); if(!c) return vMissing();
+  const keep = c.release === 'keep', mine = keep && c.creator === S.wallet;
+  const sold = c.minted >= c.supply, show = Math.min(24, c.supply), fn = fillNear(c), next = Math.min(c.supply, c.minted + 1);
+  const fillTxt = c.fill && c.fill.on ? fmt(c.fill.near ?? fn) + ' NEAR' + (c.fill.tokOn ? ' + ' + fmt(c.fill.tokPer,0) + ' ' + esc(c.fill.tokSym) : '') : '—';
+  return `<a class="back" href="#explore">${IC.back} Коллекции</a>
+  <section class="split">
+    <div class="a">
+      <p class="label">${esc(c.symbol)} · ${esc(c.creator)}${c.sample ? ' · пример' : ''}</p>
+      <h1 class="d-l">${esc(c.name)}</h1>
+      <div class="stats">
+        ${keep ? '' : `<div class="stat"><span>Цена</span><b>${fmt(c.price)} NEAR</b></div>`}
+        <div class="stat"><span>Всего</span><b>${fmt(c.supply,0)}</b></div>
+        <div class="stat"><span>Роялти</span><b>${fmt(c.royalty)}%</b></div>
+        <div class="stat"><span>Внутри каждой</span><b>${fillTxt}</b></div>
+      </div>
+      ${keep ? `<p class="note">Вся коллекция отчеканена в кошелёк создателя. ${mine ? 'Нажмите на любую NFT ниже, чтобы выставить её на продажу здесь. Или предлагайте NFT на других маркетах NEAR: они видят коллекцию по стандарту NEP-171.' : 'Купить NFT можно у создателя или на маркетах NEAR.'}</p>`
+      : `<div style="display:flex;flex-direction:column;gap:8px">
+        <div class="row" style="justify-content:space-between;font-size:14px"><span class="muted">Сминчено</span><span class="mono">${fmt(c.minted,0)} / ${fmt(c.supply,0)}</span></div>
+        <div class="prog"><i style="width:${Math.round(c.minted/c.supply*100)}%"></i></div></div>
+      <div class="row"><button class="btn btn-main" id="mint" type="button" ${sold ? 'disabled' : ''}>${sold ? 'Все NFT разобраны' : 'Сминтить за ' + fmt(c.price) + ' NEAR'}</button></div>
+      <p class="hint">Плюс чеканка ≈ ${fmt(MINT_COST)} NEAR — залог сети за хранение NFT, его платит покупатель.</p>
+      <p class="err" id="mint-err"></p>`}
+    </div>
+    <div class="b"><div class="art">${cv(c.id, next)}${keep ? '' : `<span class="num">#${next}${sold ? '' : ' следующая'}</span>`}</div></div>
+  </section>
+  <section class="sec" style="margin-top:56px">
+    <h2 class="d-m" style="margin-bottom:20px">Первые ${show} из ${fmt(c.supply,0)}</h2>
+    <div class="g4">${Array.from({length:show}, (_, i) => mine
+      ? `<a class="tile" href="#hold-${esc(c.id)}-${i+1}" aria-label="Открыть NFT #${i+1}"><div class="art">${cv(c.id, i+1)}<span class="num">#${i+1}</span></div></a>`
+      : `<div class="art">${cv(c.id, i+1)}<span class="num">#${i+1}</span></div>`).join('')}</div>
+  </section>`;
+}
+
+function traitsOf(c, idx){
+  if(c.art.mode !== 'layers' || !c.dna) return '';
+  const d = c.dna[idx-1];
+  if(d && !Array.isArray(d)) return `<div class="trait"><span>Тип</span><span>Легендарка 1 из 1</span></div>`;
+  if(!d) return '';
+  return c.art.layers.map((L, li) => { const v = L.variants[d[li]]; if(!v) return '';
+    const tot = L.variants.reduce((s, x) => s + x.w, 0);
+    return `<div class="trait"><span>${esc(L.name)}</span><span>${esc(v.label)} <span class="muted mono">${fmt(v.w/tot*100, 1)}%</span></span></div>`; }).join('');
+}
+
+function vNft(id){
+  const n = nftById(id); if(!n) return vMissing();
+  const c = col(n.col); if(!c) return vMissing();
+  const filled = c.fill && c.fill.on, sym = c.fill && c.fill.tokSym, tr = traitsOf(c, n.n);
+  return `<a class="back" href="#my">${IC.back} Мои NFT</a>
+  <section class="split">
+    <div class="b"><div class="art">${cv(c.id, n.n)}${n.listed ? '<span class="flag">на продаже</span>' : ''}</div></div>
+    <div class="a">
+      <p class="label"><a href="#col-${esc(c.id)}">${esc(c.name)}</a></p>
+      <h1 class="d-l">${esc(c.name)} #${n.n}</h1>
+      ${tr ? `<div class="traits">${tr}</div><p class="hint">Процент — как часто такой вариант встречается в коллекции.</p>` : ''}
+      ${filled ? `<div class="box">
+        <h2 class="d-m">Внутри NFT</h2>
+        <div class="stats"><div class="stat"><span>NEAR</span><b>${fmt(n.near)}</b></div>${c.fill.tokOn ? `<div class="stat"><span>${esc(sym)}</span><b>${fmt(n.tok,0)}</b></div>` : ''}</div>
+        <div class="field"><label for="dep">Положить ещё, NEAR</label><div class="inline"><input class="input mono" id="dep" inputmode="decimal" value="1"><button class="btn btn-line" id="dep-b" type="button">Положить</button></div></div>
+        <div class="row"><button class="btn btn-main" id="wd" type="button">Забрать всё в кошелёк</button></div>
+        <div id="msg"></div></div>` : ''}
+      <div class="box">
+        <h2 class="d-m">Продажа</h2>
+        ${n.listed ? `<p class="note">Выставлено на Stash за <b class="mono">${fmt(n.listPrice)} NEAR</b>.${filled ? ' Пока NFT на продаже, забрать содержимое нельзя.' : ''}</p>
+          <div class="row"><button class="btn btn-line" id="unl" type="button">Снять с продажи</button></div>`
+        : `<div class="field"><label for="lp">Выставить на Stash, цена в NEAR</label><div class="inline"><input class="input mono" id="lp" inputmode="decimal" value="${String(r2(Math.max(c.price*1.5, n.near*1.5, 1))).replace('.', ',')}"><button class="btn btn-line" id="lst" type="button">Выставить</button></div></div>
+           <p class="hint">Или оставьте NFT у себя и предлагайте её на любом маркете NEAR: NFT по стандарту NEP-171 видна там автоматически.</p>`}
+      </div>
+    </div>
+  </section>`;
+}
+
+function vMy(){
+  if(!S.wallet) return `<section class="empty"><h1 class="d-l">Мои NFT</h1><p class="lead">Подключите кошелёк, чтобы увидеть свои NFT. В демо кошелёк условный, на нём 100 NEAR.</p><button class="btn btn-main" id="in2" type="button">Подключить кошелёк</button></section>`;
+  const tok = Object.entries(S.tokens).filter(([, v]) => v > 0);
+  const held = S.collections.filter(c => c.release === 'keep' && c.creator === S.wallet);
+  const singles = S.owned.filter(n => !n.held);
+  return `<section><p class="label">${esc(S.wallet)}</p><h1 class="d-l" style="margin-bottom:28px">Мои NFT</h1>
+    <div class="stats" style="margin-bottom:16px"><div class="stat"><span>Куплено NFT</span><b>${singles.length}</b></div><div class="stat"><span>Баланс</span><b>${fmt(S.near)} NEAR</b></div>
+    <div class="stat"><span>Внутри купленных NFT</span><b>${fmt(singles.reduce((s, n) => s + n.near, 0))} NEAR</b></div>
+    ${tok.map(([k, v]) => `<div class="stat"><span>Токены</span><b>${fmt(v,0)} ${esc(k)}</b></div>`).join('')}</div>
+    <div class="row" style="margin-bottom:40px"><button class="btn btn-line btn-sm" id="topup" type="button">Пополнить демо-баланс на 100 NEAR</button></div>
+    ${held.length ? `<h2 class="d-m" style="margin-bottom:16px">Коллекции у вас целиком</h2><div class="cards" style="margin-bottom:48px">${held.map(colCard).join('')}</div>` : ''}
+    <h2 class="d-m" style="margin-bottom:16px">Отдельные NFT</h2>
+    ${S.owned.length ? `<div class="cards">${S.owned.map(n => { const c = col(n.col); return c ? `<a class="card" href="#nft-${esc(n.id)}"><div class="art">${cv(c.id, n.n)}<span class="num">#${n.n}</span>${n.listed ? '<span class="flag">на продаже</span>' : ''}</div><div class="meta"><span>${esc(c.name)} #${n.n}</span><span>${c.fill && c.fill.on ? fmt(n.near) + ' NEAR внутри' : ''}</span></div></a>` : ''; }).join('')}</div>`
+      : `<div class="empty" style="padding-top:0"><p class="lead">Пока пусто. Сминтите NFT в любой коллекции.</p><a class="btn btn-main" href="#explore">К коллекциям</a></div>`}
+  </section>`;
+}
+
+function vMissing(){ return `<section class="empty"><h1 class="d-l">Страница не найдена</h1><p class="lead">Возможно, данные демо сброшены.</p><a class="btn btn-main" href="#home">На главную</a></section>`; }
+
+/* ---------- constructor ---------- */
+function vCreate(){
+  const d = S.draft;
+  return `<section class="split">
+    <div class="a" style="flex-basis:560px">
+      <div><p class="label">Конструктор</p><h1 class="d-l">Новая коллекция</h1></div>
+      <form id="cf" novalidate>
+        <div class="step"><div class="step-h"><span class="n"></span><h2 class="d-m">Основное</h2></div>
+          <div class="fields">
+            <div class="field"><label for="f-name">Название</label><input class="input" id="f-name" maxlength="40" value="${esc(d.name)}"></div>
+            <div class="field"><label for="f-sym">Тикер</label><input class="input mono" id="f-sym" maxlength="8" value="${esc(d.symbol)}"></div>
+            <div class="field"><label for="f-sup">Сколько NFT</label><input class="input mono" id="f-sup" inputmode="numeric" value="${d.mode === 'files' ? d.files.length : d.supply}" ${d.mode === 'files' ? 'disabled' : ''}><span class="hint" id="sup-hint">${d.mode === 'files' ? 'Равно числу загруженных картинок' : 'От 1 до 10 000'}</span></div>
+            <div class="field" id="price-field"><label for="f-pr">Цена минта, NEAR</label><input class="input mono" id="f-pr" inputmode="decimal" value="${d.price}"></div>
+          </div>
+          <div class="field"><label for="f-roy">Роялти создателю с каждой перепродажи: <b class="mono" id="roy-v">${d.royalty}%</b></label><input id="f-roy" type="range" min="0" max="10" step="1" value="${d.royalty}"></div>
+        </div>
+
+        <div class="step"><div class="step-h"><span class="n"></span><h2 class="d-m">Токены внутри NFT</h2><span class="tagp" style="margin-left:auto">главная фишка</span></div>
+          <label class="opt" for="f-fill"><input type="checkbox" id="f-fill" ${d.fill.on ? 'checked' : ''}><span><b>Сделать NFT токенизированными</b><p>В каждой NFT будут лежать NEAR и, если хотите, ваш токен. Владелец заберёт их в любой момент, поэтому дешевле содержимого NFT не станет. Выключите — получится обычная коллекция.</p></span></label>
+          <div id="fill-box" ${d.fill.on ? '' : 'hidden'} style="display:flex;flex-direction:column;gap:14px">
+            <div class="field"><label for="f-pct">Сколько внутри: <b class="mono" id="pct-v">${d.fill.pct}%</b> от цены минта</label><input id="f-pct" type="range" min="5" max="100" step="5" value="${d.fill.pct}"></div>
+            <label class="opt" for="f-tok"><input type="checkbox" id="f-tok" ${d.fill.tokOn ? 'checked' : ''}><span><b>Добавить свой токен</b><p>Например мемкоин с Nearly или JustHoot. Токены на всю коллекцию нужно будет заранее перевести в контракт.</p></span></label>
+            <div class="fields" id="tok-box" ${d.fill.tokOn ? '' : 'hidden'}>
+              <div class="field"><label for="f-ta">Адрес токена</label><input class="input mono" id="f-ta" placeholder="token.nearlytrade.near" value="${esc(d.fill.tokAddr)}"></div>
+              <div class="field"><label for="f-ts">Тикер</label><input class="input mono" id="f-ts" maxlength="10" value="${esc(d.fill.tokSym)}"></div>
+              <div class="field"><label for="f-tp">В каждую NFT</label><input class="input mono" id="f-tp" inputmode="numeric" value="${d.fill.tokPer}"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="step"><div class="step-h"><span class="n"></span><h2 class="d-m">Картинки и анимация</h2></div>
+          <div class="seg" role="group" aria-label="Способ">
+            <button type="button" data-mode="layers" aria-pressed="${d.mode==='layers'}">Из слоёв</button>
+            <button type="button" data-mode="files" aria-pressed="${d.mode==='files'}">Каждую NFT сам</button>
+            <button type="button" data-mode="algo" aria-pressed="${d.mode==='algo'}">Алгоритм</button></div>
+          <div id="mode-layers" ${d.mode==='layers' ? '' : 'hidden'} style="display:flex;flex-direction:column;gap:14px">
+            <div class="advice" id="advice"></div>
+            <p class="hint">Каждая NFT берёт по одной картинке из каждого слоя, верхние слои рисуются поверх нижних. Сейчас загружен пример — замените его своими PNG одного размера с прозрачным фоном или <a href="#gen" style="color:var(--gold-text)">сгенерируйте части в генераторе</a>. Движение выбирается для каждого слоя отдельно.</p>
+            <div class="layers" id="layers"></div>
+            <div class="row"><button class="btn btn-line btn-sm" id="add-layer" type="button">Добавить слой</button><button class="btn btn-line btn-sm" id="reset-layers" type="button">Вернуть пример</button></div>
+          </div>
+          <div id="mode-files" ${d.mode==='files' ? '' : 'hidden'} style="display:flex;flex-direction:column;gap:14px">
+            <p class="hint">Одна картинка — одна NFT. Порядок картинок — номера NFT. Можно выбрать сразу много файлов.</p>
+            <div class="field" style="max-width:260px"><label for="f-fanim">Движение для всех картинок</label><select class="input" id="f-fanim">${FILE_ANIMS.map(([k, l]) => `<option value="${k}" ${d.fileAnim===k?'selected':''}>${l}</option>`).join('')}</select></div>
+            <div class="gs" id="files"></div>
+          </div>
+          <div id="mode-algo" ${d.mode==='algo' ? '' : 'hidden'} style="display:flex;flex-direction:column;gap:14px">
+            <p class="hint">Картинки не нужны: код рисует каждую NFT по её номеру, и все получаются разными.</p>
+            <div class="seg" role="group" aria-label="Стиль">${[['orbit','Орбиты'],['waves','Волны'],['stripes','Полосы']].map(([k, l]) => `<button type="button" data-algo="${k}" aria-pressed="${d.algo.style===k}">${l}</button>`).join('')}</div>
+            <div class="fields"><div class="field"><label for="f-c1">Фон</label><input id="f-c1" type="color" value="${d.algo.c1}"></div><div class="field"><label for="f-c2">Рисунок</label><input id="f-c2" type="color" value="${d.algo.c2}"></div></div>
+          </div>
+        </div>
+
+        <div class="step" id="step-review" ${d.mode==='layers' ? '' : 'hidden'}><div class="step-h"><span class="n"></span><h2 class="d-m">Проверка и ручная правка</h2></div>
+          <p class="hint">Это вся собранная коллекция. Нажмите на любую NFT, чтобы поменять её вручную.</p>
+          <div id="gallery"></div>
+          <div id="editor"></div>
+          <div class="field"><span class="lbl">Легендарки 1 из 1 — нарисованы целиком вами, входят в общее количество</span>
+            <div class="gs" id="legends"></div></div>
+          <div class="row"><button class="btn btn-line btn-sm" id="rebuild" type="button">${IC.shuffle} Пересобрать всю коллекцию</button></div>
+        </div>
+
+        <div class="step"><div class="step-h"><span class="n"></span><h2 class="d-m">Как выпустить</h2></div>
+          <label class="opt" for="r-list"><input type="radio" name="release" id="r-list" value="list" ${d.release==='list'?'checked':''}><span><b>Продавать на Stash</b><p>Появится страница минта. NFT чеканятся, когда их покупают, и за чеканку (≈ ${fmt(MINT_COST)} NEAR за штуку) платит покупатель.</p></span></label>
+          <label class="opt" for="r-keep"><input type="radio" name="release" id="r-keep" value="keep" ${d.release==='keep'?'checked':''}><span><b>Отчеканить всё себе</b><p>Все NFT сразу появятся в вашем кошельке. За чеканку платите вы, а потом сами предлагаете NFT на любых маркетах NEAR или раздаёте.</p></span></label>
+        </div>
+      </form>
+    </div>
+
+    <div class="b stick">
+      <div class="row" style="justify-content:space-between;align-items:center"><span class="label">Превью</span><button class="btn btn-line btn-sm" id="shuffle" type="button">Показать другие</button></div>
+      <div class="g3">${Array.from({length:9}, (_, i) => `<div class="art">${cv('draft', i)}</div>`).join('')}</div>
+      <div class="sum" id="sum"></div>
+      <button class="btn btn-main" id="launch" type="button">Запустить коллекцию</button>
+      <p class="err" id="lerr" role="alert"></p>
+    </div>
+  </section>`;
+}
+
+function adviceHTML(){
+  const d = S.draft, n = draftSupply(), L = Math.max(1, d.layers.length), k = perLayerNeed(n, L), cmb = combos(d.layers);
+  const chips = d.layers.map(x => { const c = x.variants.length; return `<span class="${c >= k ? 'ok' : 'bad'}">${esc(x.name)}: ${c}${c >= k ? '' : ' — ещё ' + (k - c)}</span>`; }).join('');
+  const pres = [333, 1000, 3333, 10000].map(m => `<div><b>${fmt(m,0)} NFT</b>по ${perLayerNeed(m, L)} в слое</div>`).join('');
+  return `<p><b>Совет:</b> для ${fmt(n,0)} NFT из ${L} ${L === 1 ? 'слоя' : 'слоёв'} нарисуйте примерно по <b>${k}</b> вариантов в каждом слое. Это ${fmt(Math.pow(k, L),0)} сочетаний — с запасом, чтобы работала редкость.</p>
+    <div class="chiprow">${chips}</div>
+    <p class="hint">Сейчас возможно ${fmt(cmb,0)} сочетаний${cmb >= n ? ' — хватает' : ' — не хватает, добавьте варианты'}. Для других размеров при ${L} слоях:</p>
+    <div class="presets">${pres}</div>`;
+}
+
+function layerHTML(L, li, total){
+  const tot = L.variants.reduce((s, v) => s + v.w, 0) || 1;
+  return `<div class="layer" data-li="${li}">
+    <div class="layer-h">
+      <input class="input sm" data-lname="${li}" aria-label="Название слоя" value="${esc(L.name)}">
+      <select class="input sm" data-lanim="${li}" aria-label="Движение слоя">${ANIMS.map(([k, l]) => `<option value="${k}" ${L.anim===k?'selected':''}>${l}</option>`).join('')}</select>
+      <span class="cnt" title="вариантов">${L.variants.length}</span>
+      <button class="btn-icon btn" type="button" data-lup="${li}" aria-label="Слой выше" ${li===total-1?'disabled':''}>${IC.up}</button>
+      <button class="btn-icon btn" type="button" data-ldown="${li}" aria-label="Слой ниже" ${li===0?'disabled':''}>${IC.down}</button>
+      <button class="btn-icon btn" type="button" data-ldel="${li}" aria-label="Удалить слой">${IC.x}</button>
+    </div>
+    <div class="vars">
+      ${L.variants.map((v, vi) => `<div class="var">
+        <div class="art">${cv('thumb', 0, `data-l="${li}" data-v="${vi}"`)}<button class="x" type="button" data-vdel="${li}-${vi}" aria-label="Удалить вариант ${esc(v.label)}">${IC.x}</button></div>
+        <span class="vn">${esc(v.label)}</span>
+        <select data-vw="${li}-${vi}" aria-label="Редкость ${esc(v.label)}">${RARITY.map(([w, l]) => `<option value="${w}" ${rarityKey(v.w)===w?'selected':''}>${l}</option>`).join('')}</select>
+        <span class="pct">${fmt(v.w/tot*100, 1)}%</span></div>`).join('')}
+      <label class="add-var" for="up-${li}">+ Картинки</label>
+      <input class="sr" id="up-${li}" type="file" accept="image/png,image/webp,image/jpeg" multiple data-up="${li}">
+    </div></div>`;
+}
+
+function renderLayers(){
+  const L = S.draft.layers, box = $('#layers'); if(!box) return;
+  box.innerHTML = L.map((x, i) => ({x, i})).reverse().map(({x, i}) => layerHTML(x, i, L.length)).join('');
+  bindLayers(); collect();
+}
+
+const PER = 30;
+function renderGallery(){
+  const d = S.draft, box = $('#gallery'); if(!box || d.mode !== 'layers') return;
+  const all = draftAll(), pages = Math.max(1, Math.ceil(all.length / PER));
+  d.galPage = Math.min(d.galPage, pages - 1);
+  const from = d.galPage*PER, list = all.slice(from, from + PER);
+  box.innerHTML = all.length ? `<div class="gs">${list.map((x, j) => { const i = from + j; return `<button class="tile" type="button" data-gi="${i}" aria-pressed="${editIdx === i}" aria-label="NFT ${i+1}"><div class="art">${cv('gal', i)}<span class="num">${Array.isArray(x) ? '#' + (i+1) : '1/1'}</span></div></button>`; }).join('')}</div>
+    <div class="pager" style="margin-top:10px"><button class="btn btn-line btn-sm" type="button" id="pg-prev" ${d.galPage === 0 ? 'disabled' : ''} aria-label="Назад">${IC.back}</button><span class="mono">${d.galPage+1} / ${pages}</span><button class="btn btn-line btn-sm" type="button" id="pg-next" ${d.galPage >= pages-1 ? 'disabled' : ''} aria-label="Вперёд">${IC.arrow}</button><span class="hint">${fmt(all.length,0)} NFT${d.edits ? ' · правок вручную: ' + d.edits : ''}</span></div>`
+    : `<p class="note">Пока нечего показать: добавьте картинки в слои.</p>`;
+  $$('[data-gi]').forEach(b => b.onclick = () => { editIdx = +b.dataset.gi; renderGallery(); renderEditor(); });
+  const p = $('#pg-prev'), nx = $('#pg-next');
+  if(p) p.onclick = () => { d.galPage--; renderGallery(); };
+  if(nx) nx.onclick = () => { d.galPage++; renderGallery(); };
+  collect();
+}
+function renderEditor(){
+  const d = S.draft, box = $('#editor'); if(!box) return;
+  const all = draftAll();
+  if(editIdx === null || editIdx >= all.length){ box.innerHTML = ''; collect(); return; }
+  const x = all[editIdx];
+  if(!Array.isArray(x)){
+    box.innerHTML = `<div class="editor"><div class="ea"><div class="art">${cv('edit', 0)}</div></div><div class="eb"><h3 class="d-m">Легендарка 1 из 1</h3><p class="hint">${esc(d.legends[x.l].label)}. При запуске получит случайный номер в коллекции.</p>
+      <div class="row"><button class="btn btn-line btn-sm" type="button" id="leg-del">Удалить легендарку</button><button class="btn btn-line btn-sm" type="button" id="ed-close">Закрыть</button></div></div></div>`;
+    $('#leg-del').onclick = () => { removeLegend(x.l); };
+    $('#ed-close').onclick = () => { editIdx = null; renderGallery(); renderEditor(); };
+    collect(); return;
+  }
+  box.innerHTML = `<div class="editor"><div class="ea"><div class="art">${cv('edit', 0)}<span class="num">#${editIdx+1}</span></div></div>
+    <div class="eb"><h3 class="d-m">NFT #${editIdx+1}</h3>
+      ${d.layers.map((L, li) => `<div class="field"><label for="ed-${li}">${esc(L.name)}</label><select class="input sm" id="ed-${li}" data-ed="${li}">${L.variants.map((v, vi) => `<option value="${vi}" ${x[li]===vi?'selected':''}>${esc(v.label)}</option>`).join('')}</select></div>`).join('')}
+      <p class="err" id="ed-err"></p>
+      <div class="row"><button class="btn btn-line btn-sm" type="button" id="ed-rand">${IC.shuffle} Случайно</button><button class="btn btn-line btn-sm" type="button" id="ed-close">Готово</button></div>
+    </div></div>`;
+  const setDNA = nd => {
+    const k = nd.join('.'), clash = d.dna.findIndex((o, i) => i !== editIdx && o.join('.') === k);
+    if(clash >= 0){ $('#ed-err').textContent = `Такая NFT уже есть — №${clash+1}. Выберите другое сочетание.`; renderEditor(); return false; }
+    d.dna[editIdx] = nd; d.edits++; save(); renderGallery(); renderEditor(); return true;
+  };
+  $$('[data-ed]').forEach(s => s.onchange = () => { const nd = x.slice(); nd[+s.dataset.ed] = +s.value; setDNA(nd); });
+  $('#ed-rand').onclick = () => { const r = rng(Math.floor(Math.random()*1e9)); for(let t=0;t<50;t++){ const nd = d.layers.map(L => pick(r, L.variants)); if(!d.dna.some((o, i) => i !== editIdx && o.join('.') === nd.join('.'))){ setDNA(nd); return; } } };
+  $('#ed-close').onclick = () => { editIdx = null; renderGallery(); renderEditor(); };
+  collect();
+}
+function renderLegends(){
+  const d = S.draft, box = $('#legends'); if(!box) return;
+  box.innerHTML = d.legends.map((g, i) => `<div class="var"><div class="art">${cv('leg', i)}<button class="x" type="button" data-legdel="${i}" aria-label="Удалить легендарку">${IC.x}</button></div><span class="vn">${esc(g.label)}</span></div>`).join('')
+    + `<label class="add-var" for="up-leg">+ Легендарки</label><input class="sr" id="up-leg" type="file" accept="image/png,image/webp,image/jpeg" multiple>`;
+  $$('[data-legdel]').forEach(b => b.onclick = () => removeLegend(+b.dataset.legdel));
+  $('#up-leg').onchange = ev => readFiles(ev.target.files, items => {
+    const room = Math.max(0, draftSupply() - 1 - d.legends.length);
+    items.slice(0, room).forEach(it => { d.legends.push(it); if(d.dna && d.dna.length > draftSupply() - d.legends.length) d.dna.pop(); });
+    if(items.length > room) toast('Легендарок не может быть больше, чем NFT в коллекции');
+    afterDraft(false);
+  });
+  collect();
+}
+function removeLegend(i){
+  const d = S.draft; d.legends.splice(i, 1); editIdx = null;
+  const need = draftSupply() - d.legends.length;
+  if(d.dna && d.dna.length < need){
+    const seen = new Set(d.dna.map(o => o.join('.'))), fresh = genDNA(d.layers, Math.min(need + 50, combos(d.layers)), d.seed + 101);
+    for(const o of fresh){ if(d.dna.length >= need) break; if(!seen.has(o.join('.'))){ d.dna.push(o); seen.add(o.join('.')); } }
+  }
+  afterDraft(false);
+}
+function renderFiles(){
+  const d = S.draft, box = $('#files'); if(!box) return;
+  box.innerHTML = d.files.map((f, i) => `<div class="var"><div class="art">${cv('file', i)}<span class="num">#${i+1}</span><button class="x" type="button" data-fdel="${i}" aria-label="Удалить картинку ${i+1}">${IC.x}</button></div></div>`).join('')
+    + `<label class="add-var" for="up-files">+ Картинки</label><input class="sr" id="up-files" type="file" accept="image/png,image/webp,image/jpeg,image/gif" multiple>`;
+  $$('[data-fdel]').forEach(b => b.onclick = () => { d.files.splice(+b.dataset.fdel, 1); afterDraft(false); });
+  $('#up-files').onchange = ev => readFiles(ev.target.files, items => { d.files.push(...items.slice(0, Math.max(0, 10000 - d.files.length))); afterDraft(false); });
+  collect();
+}
+function readFiles(fileList, done){
+  const files = [...(fileList || [])]; if(!files.length) return;
+  const ok = files.filter(f => f.size <= 2*1024*1024), skipped = files.length - ok.length, out = new Array(ok.length);
+  let left = ok.length; if(!left){ toast('Файлы больше 2 МБ пропущены'); return; }
+  ok.forEach((f, i) => { const rd = new FileReader();
+    rd.onload = () => { out[i] = {src:rd.result, label:f.name.replace(/\.[^.]+$/, '').slice(0, 28)}; fin(); };
+    rd.onerror = fin; rd.readAsDataURL(f); });
+  function fin(){ if(--left === 0){ done(out.filter(Boolean)); if(skipped) toast('Файлы больше 2 МБ пропущены'); } }
+}
+
+function updateSide(){
+  const d = S.draft, keep = d.release === 'keep', price = num(d.price) || 0, supply = draftSupply();
+  const fillN = d.fill.on ? r2(price*d.fill.pct/100) : 0, you = r2(price - fillN);
+  const cmb = d.mode === 'layers' ? combos(d.layers) + d.legends.length : d.mode === 'files' ? d.files.length : Infinity;
+  const enough = cmb >= supply && supply > 0;
+  const mintAll = r2(supply*MINT_COST), fillAll = r2(supply*fillN);
+  $('#roy-v').textContent = d.royalty + '%'; $('#pct-v').textContent = d.fill.pct + '%';
+  $('#fill-box').hidden = !d.fill.on; $('#tok-box').hidden = !d.fill.tokOn;
+  ['layers','files','algo'].forEach(m => { $('#mode-' + m).hidden = d.mode !== m; });
+  $('#step-review').hidden = d.mode !== 'layers';
+  $$('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === d.mode)));
+  $$('[data-algo]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.algo === d.algo.style)));
+  const sup = $('#f-sup'); sup.disabled = d.mode === 'files'; if(d.mode === 'files') sup.value = d.files.length;
+  $('#sup-hint').textContent = d.mode === 'files' ? 'Равно числу загруженных картинок' : 'От 1 до 10 000';
+  $('#price-field label').textContent = keep ? 'Цена минта, NEAR (для расчёта наполнения)' : 'Цена минта, NEAR';
+  if(d.mode === 'layers') $('#advice').innerHTML = adviceHTML();
+  const tokPer = Math.floor(num(d.fill.tokPer)) || 0, tsym = d.fill.tokSym || 'токенов';
+  const nowPay = r2(DEPLOY_COST + (keep ? mintAll + fillAll : 0));
+  $('#sum').innerHTML = `
+    <div class="sr-row"><span>${d.mode === 'files' ? 'Картинок загружено' : 'Возможных вариантов'}</span><b class="${enough ? 'big-ok' : 'big-bad'}">${cmb === Infinity ? 'без ограничений' : fmt(cmb,0)}</b></div>
+    <div class="sr-row"><span>NFT в коллекции</span><b>${fmt(supply,0)}</b></div>
+    <div class="sr-row"><span>Запуск контракта<small>платите вы, один раз</small></span><b>≈ 3–5 NEAR</b></div>
+    <div class="sr-row"><span>Чеканка ≈ ${fmt(MINT_COST)} NEAR за NFT<small>${keep ? 'платите вы за всю коллекцию' : 'платит покупатель при минте'}</small></span><b>${keep ? '≈ ' + fmt(mintAll) + ' NEAR' : '0 NEAR'}</b></div>
+    ${d.fill.on ? `<div class="sr-row"><span>Внутри каждой NFT<small>${keep ? 'кладёте вы' : 'из цены минта'}</small></span><b>${fmt(fillN)} NEAR${d.fill.tokOn ? ' + ' + fmt(tokPer,0) + ' ' + esc(tsym) : ''}</b></div>` : ''}
+    ${d.fill.on && keep ? `<div class="sr-row"><span>Наполнение всей коллекции</span><b>${fmt(fillAll)} NEAR</b></div>` : ''}
+    ${d.fill.on && d.fill.tokOn ? `<div class="sr-row"><span>Токенов на всю коллекцию</span><b>${fmt(tokPer*supply,0)} ${esc(tsym)}</b></div>` : ''}
+    ${keep ? '' : `<div class="sr-row"><span>Вам с каждого минта</span><b>${fmt(you)} NEAR</b></div>
+    <div class="sr-row"><span>Если разберут все</span><b>${fmt(you*supply)} NEAR</b></div>`}
+    <div class="sr-row total"><span>Заплатить при запуске</span><b>≈ ${fmt(nowPay)} NEAR</b></div>
+    ${!enough && supply > 0 ? `<p class="note warn" style="margin-top:10px">${d.mode === 'files' ? 'Загрузите картинки.' : 'Вариантов меньше, чем NFT. Добавьте картинок в слои или уменьшите количество.'}</p>` : ''}
+    <p class="hint" style="padding-top:10px">Сетевые цены — предварительная оценка, уточним после написания контракта.</p>`;
+}
+
+function readBasics(){
+  const d = S.draft;
+  d.name = $('#f-name').value; d.symbol = $('#f-sym').value.toUpperCase().trim(); if(d.mode !== 'files') d.supply = $('#f-sup').value; d.price = $('#f-pr').value;
+  d.royalty = +$('#f-roy').value; d.fill.on = $('#f-fill').checked; d.fill.pct = +$('#f-pct').value; d.fill.tokOn = $('#f-tok').checked;
+  d.fill.tokAddr = $('#f-ta').value.trim(); d.fill.tokSym = $('#f-ts').value.toUpperCase().trim(); d.fill.tokPer = $('#f-tp').value;
+  d.algo.c1 = $('#f-c1').value; d.algo.c2 = $('#f-c2').value; d.fileAnim = $('#f-fanim').value;
+  const r = $('input[name="release"]:checked'); d.release = r ? r.value : 'list';
+}
+
+function bindLayers(){
+  const L = S.draft.layers;
+  $$('[data-lname]').forEach(el => el.oninput = () => { L[+el.dataset.lname].name = el.value; save(); });
+  $$('[data-lanim]').forEach(el => el.onchange = () => { L[+el.dataset.lanim].anim = el.value; save(); });
+  $$('[data-lup]').forEach(el => el.onclick = () => { const i = +el.dataset.lup; if(i < L.length-1){ [L[i], L[i+1]] = [L[i+1], L[i]]; afterDraft(true); } });
+  $$('[data-ldown]').forEach(el => el.onclick = () => { const i = +el.dataset.ldown; if(i > 0){ [L[i], L[i-1]] = [L[i-1], L[i]]; afterDraft(true); } });
+  $$('[data-ldel]').forEach(el => el.onclick = () => { L.splice(+el.dataset.ldel, 1); afterDraft(true); });
+  $$('[data-vdel]').forEach(el => el.onclick = () => { const [li, vi] = el.dataset.vdel.split('-').map(Number); L[li].variants.splice(vi, 1); afterDraft(true); });
+  $$('[data-vw]').forEach(el => el.onchange = () => { const [li, vi] = el.dataset.vw.split('-').map(Number); L[li].variants[vi].w = +el.value; afterDraft(true); });
+  $$('[data-up]').forEach(el => el.onchange = () => { const li = +el.dataset.up;
+    readFiles(el.files, items => { items.forEach(it => L[li].variants.push({id:uid(), kind:'img', src:it.src, label:it.label, w:10})); afterDraft(true); }); });
+}
+function afterDraft(rebuild){
+  if(rebuild) rebuildDNA();
+  renderLayers(); renderGallery(); renderEditor(); renderLegends(); renderFiles(); updateSide(); save();
+}
+
+function validate(){
+  const d = S.draft, e = [], sup = draftSupply(), pr = num(d.price);
+  if(!d.name.trim()) e.push('Укажите название коллекции.');
+  if(!/^[A-Z0-9]{2,8}$/.test(d.symbol)) e.push('Тикер: от 2 до 8 латинских букв или цифр.');
+  if(d.mode === 'files'){ if(!d.files.length) e.push('Загрузите хотя бы одну картинку.'); }
+  else if(!(Number.isInteger(num(d.supply)) && sup >= 1 && sup <= 10000)) e.push('Количество: целое число от 1 до 10 000.');
+  if(!(pr >= 0)) e.push('Укажите цену минта (0 — бесплатно).');
+  if(d.fill.on && !(pr > 0)) e.push('Для наполнения укажите цену минта больше нуля: от неё считается сумма внутри.');
+  if(d.mode === 'layers'){
+    if(!d.layers.length) e.push('Добавьте хотя бы один слой.');
+    d.layers.forEach(L => { if(!L.variants.length) e.push(`В слое «${L.name}» нет картинок. Добавьте их или удалите слой.`); });
+    if(draftAll().length < sup) e.push(`Собрано только ${fmt(draftAll().length,0)} разных NFT из ${fmt(sup,0)}. Добавьте вариантов в слои.`);
+  }
+  if(d.fill.on && d.fill.tokOn){
+    if(!d.fill.tokAddr) e.push('Укажите адрес токена.');
+    if(!d.fill.tokSym) e.push('Укажите тикер токена.');
+    if(!(Math.floor(num(d.fill.tokPer)) > 0)) e.push('Укажите, сколько токенов класть в каждую NFT.');
+  }
+  return e;
+}
+
+function bindCreate(){
+  if(S.draft.mode === 'layers' && (!S.draft.dna || S.draft.dna.length + S.draft.legends.length !== Math.min(draftSupply(), combos(S.draft.layers) + S.draft.legends.length))) rebuildDNA();
+  afterDraft(false);
+  const f = $('#cf');
+  let lastSup = S.draft.supply;
+  const on = () => { readBasics(); if(S.draft.supply !== lastSup){ lastSup = S.draft.supply; rebuildDNA(); renderGallery(); renderEditor(); } updateSide(); save(); };
+  f.addEventListener('input', ev => { if(ev.target.closest('.layer, .editor, #legends, #files')) return; on(); });
+  f.addEventListener('change', ev => { if(ev.target.closest('.layer, .editor, #legends, #files')) return; on(); });
+  f.addEventListener('submit', ev => ev.preventDefault());
+  $$('[data-mode]').forEach(b => b.onclick = () => { S.draft.mode = b.dataset.mode; editIdx = null; S.draft.previewOff = 0; afterDraft(true); });
+  $$('[data-algo]').forEach(b => b.onclick = () => { S.draft.algo.style = b.dataset.algo; updateSide(); save(); });
+  $('#add-layer').onclick = () => { S.draft.layers.push({id:uid(), name:'Слой ' + (S.draft.layers.length + 1), anim:'none', variants:[]}); afterDraft(true); };
+  $('#reset-layers').onclick = () => { S.draft.layers = exampleLayers(); afterDraft(true); toast('Пример слоёв возвращён'); };
+  $('#rebuild').onclick = () => { S.draft.seed = Math.floor(Math.random()*1e6); afterDraft(true); toast('Коллекция пересобрана'); };
+  $('#shuffle').onclick = () => { S.draft.previewOff = Math.floor(Math.random()*10000); save(); };
+  $('#launch').onclick = launch;
+}
+
+function launch(){
+  readBasics(); const errs = validate(); $('#lerr').innerHTML = errs.map(esc).join('<br>'); if(errs.length) return;
+  const d = S.draft, sup = draftSupply(), keep = d.release === 'keep', price = r2(num(d.price) || 0);
+  const fillN = d.fill.on ? r2(price*d.fill.pct/100) : 0;
+  const cost = r2(DEPLOY_COST + (keep ? sup*MINT_COST + sup*fillN : 0));
+  if(!S.wallet) connect();
+  if(S.near < cost){ $('#lerr').textContent = `Не хватает NEAR в демо-кошельке: нужно ≈ ${fmt(cost)}, на балансе ${fmt(S.near)}. Пополнить демо-баланс можно в разделе «Мои NFT».`; return; }
+  let dna = null, art;
+  if(d.mode === 'layers'){
+    dna = draftAll().slice(0, sup);
+    const r = rng(d.seed + 7); for(let i = dna.length - 1; i > 0; i--){ const j = Math.floor(r()*(i+1)); [dna[i], dna[j]] = [dna[j], dna[i]]; }
+    art = {mode:'layers', layers:JSON.parse(JSON.stringify(d.layers)), legends:d.legends.slice()};
+  } else if(d.mode === 'files') art = {mode:'files', files:d.files.slice(), anim:d.fileAnim};
+  else art = {mode:'algo', algo:{...d.algo}};
+  S.near = r2(S.near - cost);
+  const id = 'c' + Date.now().toString(36);
+  S.collections.unshift({id, name:d.name.trim(), symbol:d.symbol, supply:sup, minted: keep ? sup : 0, price, royalty:d.royalty,
+    creator:S.wallet, sample:false, release:d.release, art, dna,
+    fill: d.fill.on ? {on:true, pct:d.fill.pct, near:fillN, tokOn:d.fill.tokOn, tokAddr:d.fill.tokAddr, tokSym:d.fill.tokSym, tokPer:Math.floor(num(d.fill.tokPer)) || 0} : {on:false}});
+  S.draft = newDraft(); editIdx = null; save(); renderWallet();
+  toast(keep ? `Отчеканено ${fmt(sup,0)} NFT в ваш кошелёк (демо)` : 'Коллекция запущена (демо)');
+  location.hash = 'col-' + id;
+}
+
+/* ---------- part generator ---------- */
+const PALS = {
+  pastel:{name:'Пастель', bg:['#F3D9C9','#D8E7DA','#DCE2F2','#F1E5B9','#E8D5EE','#CFEBEA','#F6CFD6'], body:['#7E8CE0','#E07E9A','#6CB89A','#E6A55C','#9B7CE0','#5DA9C9','#D97E6A'], acc:['#E8B63E','#F45B33','#6C5CE7','#16161B']},
+  neon:{name:'Неон', bg:['#14142B','#1B0F2E','#0E2230','#22102A','#101F1A','#2A1414'], body:['#38F5C8','#FF4FB8','#7CFF4F','#4FC3FF','#FFD43B','#B86BFF','#FF7A3D'], acc:['#FFFFFF','#FFD43B','#38F5C8','#FF4FB8']},
+  earth:{name:'Земля', bg:['#E9DFCC','#D9CBB0','#CFD8C4','#E4D2BE','#C9D3CF','#EADBC8'], body:['#8B5E3C','#6B7F4A','#B5714A','#5E6E7A','#A2843F','#7D4E57'], acc:['#E8B63E','#2F2A24','#C1502E','#F2E6D0']},
+  mono:{name:'Монохром', bg:['#F2F2F2','#E3E3E3','#D0D0D0','#2A2A2E','#BDBDBD','#151518'], body:['#16161B','#4A4A52','#8A8A92','#FFFFFF','#2E2E34','#6A6A72'], acc:['#E8B63E','#FFFFFF','#16161B','#F45B33']}
+};
+const GPARTS = [
+  {k:'bg', name:'Фон', anim:'none', max:16},
+  {k:'body', name:'Тело', anim:'float', max:16},
+  {k:'eyes', name:'Глаза', anim:'blink', max:16},
+  {k:'mouth', name:'Рот', anim:'none', max:12},
+  {k:'hat', name:'Головной убор', anim:'sway', max:12}
+];
+const EYE_ST = [['round','Круглые'],['big','Большие'],['sleepy','Сонные'],['angry','Сердитые'],['dots','Точки'],['cyclops','Циклоп'],['stars','Звёзды']];
+const MOUTH_ST = [['smile','Улыбка'],['open','Открытый'],['flat','Ровный'],['o','Удивлённый'],['teeth','Зубы'],['cat','Кошачий']];
+const HAT_ST = [['none','Нет'],['cap','Кепка'],['beanie','Шапка'],['crown','Корона'],['horns','Рога'],['bow','Бантик'],['antenna','Антенна'],['halo','Нимб']];
+const PAT = ['none','dots','rings','rays'];
+const PAT_NAME = {none:'однотонный', dots:'точки', rings:'круги', rays:'лучи'};
+function gpick(r, arr){ return arr[Math.floor(r()*arr.length)]; }
+function makePart(k, n, r, pal, existing){
+  const used = new Set(existing.map(v => JSON.stringify(v.p)));
+  for(let tries=0; tries<40; tries++){
+    let p, label, w = 10;
+    if(k === 'bg'){ const c1 = tries ? gpick(r, pal.bg) : pal.bg[(n - 1) % pal.bg.length]; p = {t:'gbg', c1, c2: mixc(c1, gpick(r, pal.bg), .6), pat: gpick(r, PAT)}; label = 'Фон ' + n + ', ' + PAT_NAME[p.pat]; }
+    else if(k === 'body'){ p = {t:'gbody', c: tries ? gpick(r, pal.body) : pal.body[(n - 1 + Math.floor(r()*3)) % pal.body.length], s: Math.floor(r()*1e6), sy: +(0.9 + r()*.25).toFixed(2), spots: r() < .3}; label = 'Тело ' + n + (p.spots ? ', пятна' : ''); }
+    else if(k === 'eyes'){ const [st, nm] = gpick(r, EYE_ST); p = {t:'geyes', st, dx: +(0.07 + r()*.04).toFixed(3), pc: gpick(r, [INK, INK, '#3B5BDB', '#2F9E44', '#C2255C', '#E8B63E'])}; label = nm; if(st === 'cyclops') w = 4; }
+    else if(k === 'mouth'){ const [st, nm] = gpick(r, MOUTH_ST); p = {t:'gmouth', st}; label = nm; }
+    else { const [st, nm] = n === 1 ? HAT_ST[0] : gpick(r, HAT_ST.slice(1)); p = {t:'ghat', st, c: gpick(r, pal.acc.concat(pal.body))}; label = nm; if(st === 'crown' || st === 'halo') w = 1; else if(st === 'horns') w = 4; }
+    if(!used.has(JSON.stringify(p))) return {id:uid(), kind:'proc', p, label, w};
+  }
+  return null;
+}
+function newGen(){ return {pal:'pastel', counts:{bg:6, body:6, eyes:5, mouth:5, hat:6}, seed:Math.floor(Math.random()*1e6), parts:{bg:[], body:[], eyes:[], mouth:[], hat:[]}}; }
+function fillParts(regenerate){
+  const G = S.gen, pal = PALS[G.pal], r = rng(G.seed);
+  GPARTS.forEach(({k}) => {
+    let arr = G.parts[k] || [];
+    if(regenerate) arr = arr.filter(v => v.lock);
+    while(arr.length > G.counts[k]){ const i = arr.map(v => !!v.lock).lastIndexOf(false); if(i < 0) break; arr.splice(i, 1); }
+    while(arr.length < G.counts[k]){ const v = makePart(k, arr.length + 1, r, pal, arr); if(!v) break; arr.push(v); }
+    G.parts[k] = arr;
+  });
+}
+function genLayers(){ const G = S.gen; return GPARTS.map(({k, name, anim}) => ({id:k, name, anim, variants:G.parts[k]})); }
+let genPrevDNA = [];
+function genPreview(){ genPrevDNA = genDNA(genLayers(), 9, S.gen.seed + 11); }
+
+function vGen(){
+  const G = S.gen, L = genLayers(), cmb = combos(L);
+  return `<section class="split">
+    <div class="a" style="flex-basis:560px">
+      <div><p class="label">Генератор частей</p><h1 class="d-l">Части тела для будущей коллекции</h1></div>
+      <p class="lead">Выберите палитру и сколько вариантов нужно в каждой части. Понравившиеся варианты закрепите замком, остальные перегенерируйте. Готовый набор одним нажатием уходит в конструктор.</p>
+      <div class="step" style="counter-increment:none">
+        <div class="field"><span class="lbl">Палитра</span><div class="seg" role="group" aria-label="Палитра">${Object.entries(PALS).map(([k, v]) => `<button type="button" data-pal="${k}" aria-pressed="${G.pal === k}">${v.name}</button>`).join('')}</div></div>
+        <div class="fields">${GPARTS.map(({k, name, max}) => `<div class="field"><label for="gc-${k}">${name}</label><input class="input mono" id="gc-${k}" data-gc="${k}" type="number" min="1" max="${max}" value="${G.counts[k]}"></div>`).join('')}</div>
+        <div class="row"><button class="btn btn-main" id="g-regen" type="button">${IC.shuffle} Сгенерировать заново</button><span class="hint" style="align-self:center">Закреплённые варианты останутся</span></div>
+      </div>
+      ${L.map((x, li) => `<div class="step" style="counter-increment:none">
+        <div class="step-h"><h2 class="d-m">${x.name}</h2><span class="muted" style="font-size:14px">${x.variants.length} вар.</span><button class="btn btn-sm btn-line" type="button" data-gmore="${GPARTS[li].k}" style="margin-left:auto">+ Ещё</button></div>
+        <div class="vars">${x.variants.map((v, vi) => `<div class="var">
+          <div class="art">${cv('gthumb', 0, `data-l="${li}" data-v="${vi}"`)}
+            <button class="lk" type="button" data-glock="${GPARTS[li].k}-${vi}" aria-pressed="${!!v.lock}" aria-label="${v.lock ? 'Открепить' : 'Закрепить'} ${esc(v.label)}">${IC.lock}</button>
+            <button class="x" type="button" data-gdel="${GPARTS[li].k}-${vi}" aria-label="Удалить ${esc(v.label)}">${IC.x}</button></div>
+          <span class="vn">${esc(v.label)}</span></div>`).join('')}</div></div>`).join('')}
+      <div class="soon">${IC.spark}<span><b>Скоро: генерация по описанию.</b> Напишите «пиксельная сова в кепке», и нейросеть нарисует части в одном стиле. Для этого подключим сервис генерации картинок.</span></div>
+    </div>
+    <div class="b stick">
+      <div class="row" style="justify-content:space-between;align-items:center"><span class="label">Так будут выглядеть NFT</span><button class="btn btn-line btn-sm" id="g-prev" type="button">Другие</button></div>
+      <div class="g3">${Array.from({length:9}, (_, i) => `<div class="art">${cv('gprev', i)}</div>`).join('')}</div>
+      <div class="sum">
+        <div class="sr-row"><span>Возможных сочетаний</span><b>${fmt(cmb,0)}</b></div>
+        <div class="sr-row"><span>Хватит на коллекцию<small>с запасом для редкости</small></span><b>до ${fmt(Math.floor(cmb/1.5),0)} NFT</b></div>
+      </div>
+      <button class="btn btn-main" id="g-send" type="button">Перенести в конструктор ${IC.arrow}</button>
+      <p class="hint">Слои заменят текущие в конструкторе. Движение уже настроено: тело парит, глаза моргают, головной убор качается.</p>
+    </div>
+  </section>`;
+}
+function bindGen(){
+  const G = S.gen, rerender = () => { genPreview(); save(); const y = scrollY; route(); scrollTo(0, y); };
+  $$('[data-pal]').forEach(b => b.onclick = () => { G.pal = b.dataset.pal; G.seed = Math.floor(Math.random()*1e6); fillParts(true); rerender(); });
+  $$('[data-gc]').forEach(el => el.onchange = () => { const k = el.dataset.gc, mx = GPARTS.find(x => x.k === k).max; G.counts[k] = Math.max(1, Math.min(mx, Math.floor(num(el.value)) || 1)); fillParts(false); rerender(); });
+  $('#g-regen').onclick = () => { G.seed = Math.floor(Math.random()*1e6); fillParts(true); rerender(); };
+  $$('[data-gmore]').forEach(b => b.onclick = () => { const k = b.dataset.gmore, mx = GPARTS.find(x => x.k === k).max; if(G.counts[k] >= mx){ toast('Максимум ' + mx + ' вариантов'); return; } G.counts[k]++; G.seed++; fillParts(false); rerender(); });
+  $$('[data-glock]').forEach(b => b.onclick = () => { const [k, i] = b.dataset.glock.split('-'); const v = G.parts[k][+i]; v.lock = !v.lock; save(); b.setAttribute('aria-pressed', String(v.lock)); });
+  $$('[data-gdel]').forEach(b => b.onclick = () => { const [k, i] = b.dataset.gdel.split('-'); if(G.parts[k].length <= 1){ toast('В части должен остаться хотя бы один вариант'); return; } G.parts[k].splice(+i, 1); G.counts[k] = G.parts[k].length; rerender(); });
+  $('#g-prev').onclick = () => { genPrevDNA = genDNA(genLayers(), 9, Math.floor(Math.random()*1e6)); };
+  $('#g-send').onclick = () => {
+    const d = S.draft;
+    d.layers = JSON.parse(JSON.stringify(genLayers())).map(L => ({...L, id:uid(), variants:L.variants.map(v => { const c = {...v, id:uid()}; delete c.lock; return c; })}));
+    d.mode = 'layers'; d.legends = []; editIdx = null; rebuildDNA(); save();
+    toast('Части перенесены в конструктор'); location.hash = 'create';
+  };
+}
+
+/* ---------- other bindings ---------- */
+function bindCollection(id){
+  const b = $('#mint'); if(!b) return;
+  b.onclick = () => {
+    const c = col(id); if(!S.wallet) connect(); if(c.minted >= c.supply) return;
+    const cost = r2(c.price + MINT_COST);
+    if(S.near < cost){ $('#mint-err').textContent = `Не хватает NEAR: нужно ${fmt(cost)}, на балансе ${fmt(S.near)}.`; return; }
+    S.near = r2(S.near - cost); c.minted++;
+    const n = {id:uid(), col:c.id, n:c.minted, near:fillNear(c), tok:c.fill && c.fill.on && c.fill.tokOn ? c.fill.tokPer : 0, listed:false, listPrice:null};
+    S.owned.unshift(n); save(); renderWallet(); toast(`Сминчено: ${c.name} #${n.n}`); location.hash = 'nft-' + n.id;
+  };
+}
+function openHeld(colId, n){
+  const c = col(colId); if(!c) return null;
+  let o = S.owned.find(x => x.col === colId && x.n === n);
+  if(!o){ o = {id:uid(), col:colId, n, near:c.fill && c.fill.on ? (c.fill.near || 0) : 0, tok:c.fill && c.fill.on && c.fill.tokOn ? c.fill.tokPer : 0, listed:false, listPrice:null, held:true}; S.owned.unshift(o); save(); }
+  return o;
+}
+function bindNft(id){
+  const n = nftById(id); if(!n) return; const c = col(n.col); if(!c) return;
+  const msg = (t, cls='') => { const m = $('#msg'); if(m) m.innerHTML = `<p class="note ${cls}">${t}</p>`; };
+  const dep = $('#dep-b'); if(dep) dep.onclick = () => { const a = num($('#dep').value);
+    if(!(a > 0)) return msg('Введите сумму больше нуля.', 'warn'); if(a > S.near) return msg(`На балансе только ${fmt(S.near)} NEAR.`, 'warn');
+    S.near = r2(S.near - a); n.near = r2(n.near + a); save(); renderWallet(); route(); toast(`Положено ${fmt(a)} NEAR`); };
+  const wd = $('#wd'); if(wd) wd.onclick = () => {
+    if(n.listed) return msg('NFT выставлена на продажу, поэтому забрать содержимое нельзя. Сначала снимите её с продажи.', 'warn');
+    if(n.near <= 0 && n.tok <= 0) return msg('Внутри уже пусто.');
+    const got = `${fmt(n.near)} NEAR${n.tok ? ' и ' + fmt(n.tok,0) + ' ' + esc(c.fill.tokSym) : ''}`;
+    S.near = r2(S.near + n.near); if(n.tok) S.tokens[c.fill.tokSym] = (S.tokens[c.fill.tokSym] || 0) + n.tok;
+    n.near = 0; n.tok = 0; save(); renderWallet(); route(); msg('В кошелёк переведено: ' + got, 'ok'); };
+  const l = $('#lst'); if(l) l.onclick = () => { const p = num($('#lp').value); if(!(p > 0)) return; n.listed = true; n.listPrice = r2(p); save(); route(); toast('Выставлено на продажу'); };
+  const u = $('#unl'); if(u) u.onclick = () => { n.listed = false; n.listPrice = null; save(); route(); toast('Снято с продажи'); };
+}
+function bindGuide(){ $$('[data-jump]').forEach(a => a.onclick = ev => { ev.preventDefault(); const el = document.getElementById(a.dataset.jump); if(el) el.scrollIntoView({behavior: reduced ? 'auto' : 'smooth'}); }); }
+function bindMy(){
+  const i2 = $('#in2'); if(i2) i2.onclick = () => { connect(); route(); };
+  const t = $('#topup'); if(t) t.onclick = () => { S.near = r2(S.near + 100); save(); renderWallet(); route(); toast('Демо-баланс пополнен'); };
+}
+
+/* ---------- router ---------- */
+function route(){
+  const h = (location.hash || '#home').slice(1);
+  if(h.startsWith('hold-')){
+    const m = h.match(/^hold-([A-Za-z0-9]+)-(\d+)$/), o = m && S.wallet ? openHeld(m[1], +m[2]) : null;
+    location.replace('#' + (o ? 'nft-' + o.id : 'my')); return;
+  }
+  let html, top = '', after = null;
+  if(h === 'create'){ html = vCreate(); top = 'create'; after = bindCreate; }
+  else if(h === 'guide'){ html = vGuide(); top = 'guide'; after = bindGuide; }
+  else if(h === 'gen'){ if(!S.gen){ S.gen = newGen(); fillParts(true); save(); } genPreview(); html = vGen(); top = 'gen'; after = bindGen; }
+  else if(h === 'explore'){ html = vExplore(); top = 'explore'; after = bindExplore; }
+  else if(h === 'my'){ html = vMy(); top = 'my'; after = bindMy; }
+  else if(h.startsWith('col-')){ const id = h.slice(4); html = vCollection(id); top = 'explore'; after = () => bindCollection(id); }
+  else if(h.startsWith('nft-')){ const id = h.slice(4); html = vNft(id); top = 'my'; after = () => bindNft(id); }
+  else { html = vHome(); top = 'home'; after = bindHome; }
+  $('#view').innerHTML = html;
+  $$('.nav a').forEach(a => { if(a.dataset.r === top) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+  if(after) after();
+  collect();
+}
+let last = location.hash;
+addEventListener('hashchange', () => { route(); if(location.hash !== last) scrollTo(0, 0); last = location.hash; });
+$('#q').addEventListener('input', ev => { query = ev.target.value; if((location.hash || '#home') !== '#explore') location.hash = 'explore'; else renderExplore(); });
+startLang(); renderWallet(); route(); requestAnimationFrame(frame);
+})();
+</script>
