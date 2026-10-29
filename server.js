@@ -41,17 +41,17 @@ function readJson(req, max){
   });
 }
 
-async function openrouter(prompt, image){
+async function openrouter(prompt, images){
   const headers = {'Authorization':'Bearer ' + KEY, 'Content-Type':'application/json', 'X-Title':'Stash NFT'};
   // 1) Image API
   const body = {model:MODEL, prompt, aspect_ratio:'1:1', resolution:'1K'};
-  if(image) body.input_references = [{type:'image_url', image_url:{url:image}}];
+  if(images.length) body.input_references = images.map(url => ({type:'image_url', image_url:{url}}));
   let r = await fetch('https://openrouter.ai/api/v1/images', {method:'POST', headers, body:JSON.stringify(body)});
   let j = await r.json().catch(() => ({}));
   if(r.ok && j.data && j.data[0] && j.data[0].b64_json) return `data:${j.data[0].media_type || 'image/png'};base64,${j.data[0].b64_json}`;
   // 2) Fallback: chat completions with image output
   const content = [{type:'text', text:prompt}];
-  if(image) content.push({type:'image_url', image_url:{url:image}});
+  images.forEach(url => content.push({type:'image_url', image_url:{url}}));
   r = await fetch('https://openrouter.ai/api/v1/chat/completions', {method:'POST', headers, body:JSON.stringify({model:MODEL, messages:[{role:'user', content}], modalities:['image','text']})});
   j = await r.json().catch(() => ({}));
   const img = j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.images && j.choices[0].message.images[0];
@@ -67,10 +67,11 @@ async function api(req, res, p){
     if(quota(ip) <= 0) return send(res, 429, {error:'Daily generation limit reached'});
     let b; try{ b = await readJson(req, 12 * 1024 * 1024); }catch(e){ return send(res, 400, {error:e.message}); }
     const prompt = String(b.prompt || '').slice(0, 1200).trim();
-    const image = typeof b.image === 'string' && b.image.startsWith('data:image/') ? b.image : null;
+    const isImg = x => typeof x === 'string' && x.startsWith('data:image/');
+    const images = [].concat(b.images || [], b.image || []).filter(isImg).slice(0, 4);
     if(!prompt) return send(res, 400, {error:'Empty prompt'});
     spend(ip);
-    try{ const out = await openrouter(prompt, image); return send(res, 200, {image:out, left:quota(ip)}); }
+    try{ const out = await openrouter(prompt, images); return send(res, 200, {image:out, left:quota(ip)}); }
     catch(e){ refund(ip); console.error('AI error:', e.message); return send(res, 502, {error:String(e.message).slice(0, 300), left:quota(ip)}); }
   }
   return send(res, 404, {error:'Not found'});

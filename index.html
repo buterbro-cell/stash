@@ -489,7 +489,9 @@ const EN = {
   'Опишите стиль и перечислите детали через запятую. Сначала нейросеть рисует персонажа без лица, потом добавляет ему каждую деталь, а сайт вырезает её в отдельный слой.':'Describe the style and list the details, separated by commas. The AI first draws a faceless character, then adds each detail to it, and the site cuts every detail out into its own layer.',
   'Проверяю подключение…':'Checking the connection…',
   'AI-генерация работает на развёрнутом сайте, когда в настройках сервера задан ключ OPENROUTER_API_KEY. Здесь, в демо, она недоступна.':'AI generation works on the deployed site once the server has an OPENROUTER_API_KEY set. It isn’t available in this demo.',
-  'Стиль персонажа':'Character style','Фоны':'Backgrounds','Головные уборы':'Headwear','Цветов тела (перекраска бесплатно)':'Body colours (recolouring is free)',
+  'Стиль персонажа':'Character style','+ Референс':'+ Reference',
+  'Нейросеть возьмёт с них манеру рисования, цвета и детализацию, но не будет копировать самих персонажей. Используйте картинки, на которые у вас есть права.':'The AI takes the drawing manner, colours and level of detail from them, without copying the characters themselves. Use images you have the rights to.',
+  'Нужна картинка до 8 МБ':'An image up to 8 MB is needed','Фоны':'Backgrounds','Головные уборы':'Headwear','Цветов тела (перекраска бесплатно)':'Body colours (recolouring is free)',
   'Пишите детали по-английски: так нейросеть понимает точнее.':'Write details in English: the model understands them more precisely.',
   'Базовый персонаж':'Base character','Базовый персонаж готов. Не нравится — сгенерируйте заново.':'The base character is ready. Don’t like it? Generate a new one.',
   '1. Новый персонаж':'1. New character','1. Нарисовать персонажа':'1. Draw the character','2. Нарисовать детали':'2. Draw the details','Детали готовы':'Details are ready',
@@ -540,6 +542,9 @@ const RX = [
   [/^Максимум (\d+)/, a => `Maximum ${a}`],
   [/^Подключено: (.+)\. Осталось генераций сегодня: (\d+)\.$/, (a, b) => `Connected: ${a}. Generations left today: ${b}.`],
   [/^Будет (\d+) картинок, примерно \$(.+) на балансе OpenRouter\.$/, (a, b) => `That’s ${a} images, about $${b} from your OpenRouter balance.`],
+  [/^Референсы стиля — до (\d+) картинок, необязательно$/, a => `Style references — up to ${a} images, optional`],
+  [/^Не больше (\d+) референсов$/, a => `No more than ${a} references`],
+  [/^Референс (\d+)$/, a => `Reference ${a}`],
   [/^Генерирую… (\d+) из (\d+)$/, (a, b) => `Generating… ${a} of ${b}`],
   [/^Не получилось: (.+)\. Попробуйте ещё раз или переформулируйте\.$/, a => `Didn’t work: ${a}. Try again or rephrase.`]
 ];
@@ -1651,8 +1656,9 @@ async function aiStatus(){
   catch(e){ AI.status = {enabled:false, reason:'offline'}; }
   return AI.status;
 }
-async function aiImage(prompt, image){
-  const r = await fetch('api/ai/image', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt, image})});
+async function aiImage(prompt, images){
+  images = [].concat(images || []).filter(Boolean);
+  const r = await fetch('api/ai/image', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt, images})});
   const j = await r.json().catch(() => ({}));
   if(!r.ok || !j.image) throw new Error(j.error || ('HTTP ' + r.status));
   if(typeof j.left === 'number' && AI.status) AI.status.left = j.left;
@@ -1686,13 +1692,30 @@ function recolor(d, deg){
   const c2 = document.createElement('canvas'); c2.width = c2.height = SZ; const x = c2.getContext('2d');
   x.filter = `hue-rotate(${deg}deg)`; x.drawImage(c, 0, 0); return c2.toDataURL('image/png');
 }
+const REF_MAX = 3;
+function aiRefs(){ const c = aiCfg(); c.refs = (c.refs || []).slice(0, REF_MAX); return c.refs; }
+const REF_NOTE = ' Match the art style of the attached reference image(s): line work, shading, colour palette and level of detail. Use them for style only; do not copy their characters or composition.';
+async function addRefs(files){
+  const list = aiRefs();
+  for(const f of [...files]){
+    if(list.length >= REF_MAX){ toast('Не больше ' + REF_MAX + ' референсов'); break; }
+    if(!/^image\//.test(f.type) || f.size > 8*1024*1024){ toast('Нужна картинка до 8 МБ'); continue; }
+    const src = await new Promise(ok => { const rd = new FileReader(); rd.onload = () => ok(rd.result); rd.onerror = () => ok(null); rd.readAsDataURL(f); });
+    if(!src) continue;
+    try{ const im = await loadImg(src), k = Math.min(1, 768 / Math.max(im.naturalWidth, im.naturalHeight));
+      const c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth*k); c.height = Math.round(im.naturalHeight*k);
+      const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height);
+      list.push(c.toDataURL('image/jpeg', .85)); }catch(e){}
+  }
+  save(); renderAI();
+}
 function aiVariant(src, label){ return {id:uid(), kind:'img', src, label, w:10}; }
 async function pool(tasks, n){ let i = 0; const run = async () => { while(i < tasks.length){ const t = tasks[i++]; await t(); } }; await Promise.all(Array.from({length:n}, run)); }
 
 async function aiMakeBase(){
   const c = aiCfg();
-  const prompt = `${c.style}. One single character, front view, centered, the character fills about 60% of a square frame, on a perfectly flat solid pure green (#00FF00) background with no shadows, no gradient, no text. Blank face: no eyes, no mouth, no hat and no accessories.`;
-  AI.base = await aiImage(prompt);
+  const prompt = `${c.style}. One single character, front view, centered, the character fills about 60% of a square frame, on a perfectly flat solid pure green (#00FF00) background with no shadows, no gradient, no text. Blank face: no eyes, no mouth, no hat and no accessories.` + (aiRefs().length ? REF_NOTE : '');
+  AI.base = await aiImage(prompt, aiRefs());
 }
 async function aiMakeParts(){
   const c = aiCfg(), baseIm = await loadImg(AI.base), baseD = toData(baseIm);
@@ -1703,7 +1726,7 @@ async function aiMakeParts(){
   if(nRe > 1){ const cut = chromaCut(baseD); for(let k=1;k<nRe;k++) out.body.push(aiVariant(recolor(cut, Math.round(360*k/nRe)), 'Тело ' + (k + 1))); }
   const jobs = [];
   aiList(c.bg).forEach(item => jobs.push(async () => {
-    const img = await aiImage(`${c.style}. Background scene only for an NFT avatar, no characters, no text, no frame: ${item}. Square image.`);
+    const img = await aiImage(`${c.style}. Background scene only for an NFT avatar, no characters, no text, no frame: ${item}. Square image.` + (aiRefs().length ? REF_NOTE : ''), aiRefs());
     out.bg.push(aiVariant(toURL(toData(await loadImg(img)), 'image/jpeg', .86), item)); }));
   [['eyes', c.eyes], ['mouth', c.mouth], ['hat', c.hat]].forEach(([k, list]) => aiList(list).forEach(item => jobs.push(async () => {
     const img = await aiImage(`Edit this image: add ${item} to the character. Keep everything else exactly the same: the same character, the same pose, the same position and size, the same flat green background. Change nothing except adding ${item}.`, AI.base);
@@ -1724,6 +1747,10 @@ function renderAI(){
     <p class="hint">Опишите стиль и перечислите детали через запятую. Сначала нейросеть рисует персонажа без лица, потом добавляет ему каждую деталь, а сайт вырезает её в отдельный слой.</p>
     ${!st ? '<p class="note">Проверяю подключение…</p>' : on ? `<p class="note ok">Подключено: ${esc(st.model)}. Осталось генераций сегодня: ${st.left}.</p>` : '<p class="note">AI-генерация работает на развёрнутом сайте, когда в настройках сервера задан ключ OPENROUTER_API_KEY. Здесь, в демо, она недоступна.</p>'}
     <div class="field"><label for="ai-style">Стиль персонажа</label><textarea class="input" id="ai-style" rows="2" style="resize:vertical">${esc(c.style)}</textarea></div>
+    <div class="field"><span class="lbl">Референсы стиля — до ${REF_MAX} картинок, необязательно</span>
+      <div class="gs" style="grid-template-columns:repeat(auto-fill,minmax(96px,1fr))">${aiRefs().map((r, i) => `<div class="var"><div class="art"><img src="${r}" alt="Референс ${i+1}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><button class="x" type="button" data-refdel="${i}" aria-label="Удалить референс ${i+1}">${IC.x}</button></div></div>`).join('')}
+        ${aiRefs().length < REF_MAX ? `<label class="add-var" for="ai-ref">+ Референс</label><input class="sr" id="ai-ref" type="file" accept="image/png,image/jpeg,image/webp" multiple>` : ''}</div>
+      <span class="hint">Нейросеть возьмёт с них манеру рисования, цвета и детализацию, но не будет копировать самих персонажей. Используйте картинки, на которые у вас есть права.</span></div>
     <div class="fields">
       <div class="field"><label for="ai-bg">Фоны</label><input class="input" id="ai-bg" value="${esc(c.bg)}"></div>
       <div class="field"><label for="ai-eyes">Глаза</label><input class="input" id="ai-eyes" value="${esc(c.eyes)}"></div>
@@ -1740,6 +1767,8 @@ function renderAI(){
       <button class="btn btn-main" id="ai-parts" type="button" ${on && !AI.busy && AI.base ? '' : 'disabled'}>2. Нарисовать детали</button>
     </div></div>`;
   ['style','bg','eyes','mouth','hat','recolor'].forEach(k => { const el = $('#ai-' + k); if(el) el.onchange = () => { aiCfg()[k] = el.value; save(); renderAI(); }; });
+  const rf = $('#ai-ref'); if(rf) rf.onchange = () => addRefs(rf.files);
+  $$('[data-refdel]').forEach(b => b.onclick = () => { aiRefs().splice(+b.dataset.refdel, 1); save(); renderAI(); });
   const b1 = $('#ai-base'), b2 = $('#ai-parts');
   if(b1) b1.onclick = async () => { AI.busy = true; AI.log = []; AI.total = 0; renderAI(); try{ await aiMakeBase(); }catch(e){ AI.log.push(e.message); } AI.busy = false; renderAI(); };
   if(b2) b2.onclick = async () => { AI.busy = true; AI.log = []; renderAI(); try{ await aiMakeParts(); genPreview(); save(); AI.busy = false; route(); toast('Детали готовы'); return; }catch(e){ AI.log.push(e.message); } AI.busy = false; renderAI(); };

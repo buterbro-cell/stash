@@ -7,7 +7,7 @@ Stash is a no-code platform for launching **tokenized NFT collections** on NEAR:
 ## Features
 
 - **Part generator** — generate backgrounds, bodies, eyes, mouths and headwear in one palette, lock the variants you like, regenerate the rest, and send the set to the builder.
-- **AI generation (Nano Banana)** — describe a style and list details; the model draws a faceless base character and then adds each detail as an edit, and the browser cuts every detail into a transparent layer aligned with the body. Runs through the server so the API key stays private.
+- **AI generation (Nano Banana)** — describe a style and list details; the model draws a faceless base character and then adds each detail as an edit, and the browser cuts every detail into a transparent layer aligned with the body. Optional style references (up to 3 images) guide the look of the character and backgrounds. Runs through the server so the API key stays private.
 - **Collection builder** — from layers (with rarity, manual edits of any NFT and 1-of-1 legendaries), from your own finished images, or algorithmic styles. Any size from 1 to 10,000; the builder suggests how many variants each layer needs.
 - **Animation** — per-layer motion (float, sway, pulse, spin, blink, shimmer).
 - **Tokens inside NFTs** — part of the mint price and/or your own token goes into every NFT. Withdrawals are locked while an NFT is listed for sale, so buyers get exactly what they see.
