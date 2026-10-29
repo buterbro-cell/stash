@@ -26,7 +26,7 @@ Demo data is stored in the browser's `localStorage`.
 
 ### Deploy
 
-- **Buildpack hosts** (Northflank buildpack, Heroku-style): `npm start` serves the site on `$PORT` (default 8080).
+- **Buildpack hosts** (Northflank buildpack, Heroku-style): `npm start` runs `server.js`, a zero-dependency server on `$PORT` (default 8080).
 - **Docker** (Northflank Dockerfile build, Fly.io, etc.): the `Dockerfile` serves it with nginx on port **8080**.
 - **GitHub Pages / Vercel / Netlify**: no build step, publish the repository root.
 
