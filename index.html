@@ -504,7 +504,7 @@ const EN = {
   'Такой вариант уже есть':'That value already exists','Для этого признака нет готовых подсказок — впишите вариант сами':'No suggestions for this trait — type a value yourself','Впишите название признака':'Enter a trait name',
   'Добавьте варианты вручную: для этих признаков нет готовых подсказок':'Add values by hand: there are no suggestions for these traits','Все сочетания уже нарисованы. Добавьте варианты в признаки.':'All combinations are drawn already. Add values to the traits.',
   'Картинки ещё загружаются, подождите секунду':'Images are still loading, wait a second','NFT перенесены в конструктор':'NFTs sent to the builder',
-  'Волосы':'Hair','Убираю фон…':'Removing the background…','Сохраняю исходный фон отдельно…':'Saving the original background separately…',
+  'Волосы':'Hair','Отделить фон заново с AI':'Remove background again with AI','Начать слои заново':'Start layers over','Слои сброшены, основа осталась':'Layers cleared, the base picture stays','Убираю фон…':'Removing the background…','Сохраняю исходный фон отдельно…':'Saving the original background separately…',
   'Нейросеть не убрала фон. Попробуйте ещё раз или выделите фон палочкой вручную.':'The AI didn’t remove the background. Try again or select the background with the wand by hand.','Исходный фон':'Original background',
   'Отделить фон с помощью AI':'Remove background with AI','Работает на любой картинке: нейросеть убирает фон, а исходный фон сохраняет отдельным вариантом. 2 картинки, ≈ $0,08.':'Works on any picture: the AI removes the background and keeps the original background as a separate variant. 2 images, ≈ $0.08.',
   'Отделить простой фон (без AI)':'Remove a plain background (no AI)','Бесплатно, но только для однотонного фона, как у персонажей.':'Free, but only for a plain single-colour background, like the characters have.',
@@ -2215,7 +2215,7 @@ function vStudio(){
         </div>
         <div style="flex:1 1 260px;min-width:0;display:flex;flex-direction:column;gap:10px">
           ${!c.layers.length ? `${AI.status && AI.status.enabled ? `<button class="btn btn-main" type="button" id="st-aicut">${IC.spark} Отделить фон с помощью AI</button><p class="hint">Работает на любой картинке: нейросеть убирает фон, а исходный фон сохраняет отдельным вариантом. 2 картинки, ≈ $0,08.</p>` : ''}
-            <button class="btn btn-line" type="button" id="st-cut">Отделить простой фон (без AI)</button><p class="hint">Бесплатно, но только для однотонного фона, как у персонажей.</p>` : ''}
+            <button class="btn btn-line" type="button" id="st-cut">Отделить простой фон (без AI)</button><p class="hint">Бесплатно, но только для однотонного фона, как у персонажей.</p>` : `<div class="row">${AI.status && AI.status.enabled ? `<button class="btn btn-sm btn-line" type="button" id="st-aicut">${IC.spark} Отделить фон заново с AI</button>` : ''}<button class="btn btn-sm btn-line" type="button" id="st-reset">Начать слои заново</button></div>`}
           <div class="layers">${c.layers.map((l, li) => ({l, li})).reverse().map(({l, li}) => `<div class="layer" style="${li === c.sel.li ? 'outline:1px solid var(--gold2)' : ''}">
             <div class="layer-h"><button class="btn btn-sm ${li === c.sel.li ? 'btn-main' : 'btn-line'}" type="button" data-stsel="${li}" style="min-height:34px">${li === c.sel.li ? 'Выбран' : 'Выбрать'}</button>
               <input class="input sm" data-stname="${li}" aria-label="Название слоя" value="${esc(l.name)}">
@@ -2279,6 +2279,7 @@ function bindStudio(){
   $$('[data-stsrc]').forEach(b => b.onclick = async () => { const k = b.dataset.stsrc, src = AIMG.get(k) || await IDB.get(k); if(!src) return; await stSetSource(src); ST.msg = ''; stRender(); toast('Основа выбрана'); });
   const up = $('#st-up'); if(up) up.onchange = () => { const f = up.files && up.files[0]; if(!f) return; const rd = new FileReader(); rd.onload = async () => { await stSetSource(rd.result); ST.msg = ''; stRender(); }; rd.readAsDataURL(f); };
   const cut = $('#st-cut'); if(cut) cut.onclick = async () => { ST.msg = ''; await stAutoCut(); stRender(); };
+  const rs = $('#st-reset'); if(rs) rs.onclick = () => { c.layers.forEach(l => { STM.delete(l.id); IDB.del('st:mask:' + l.id); }); c.layers = []; c.sel = {li:-1, vi:0}; STC.clear(); ST.msg = ''; save(); stRender(); toast('Слои сброшены, основа осталась'); };
   const aic = $('#st-aicut'); if(aic) aic.onclick = async () => { ST.msg = ''; try{ await stAICut(); }catch(e){ ST.msg = 'Не получилось: ' + e.message; } ST.busy = false; stRender(); };
   const au = $('#st-auto'); if(au) au.onclick = stAutoAll;
   $$('[data-sttool]').forEach(b => b.onclick = () => { c.tool = b.dataset.sttool; save(); stRender(); });
