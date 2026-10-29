@@ -7,7 +7,7 @@ Stash is a no-code platform for launching **tokenized NFT collections** on NEAR:
 ## Features
 
 - **Part generator** — generate backgrounds, bodies, eyes, mouths and headwear in one palette, lock the variants you like, regenerate the rest, and send the set to the builder.
-- **AI generation (Nano Banana)** — describe a style and list details; the model draws a faceless base character and then adds each detail as an edit, and the browser cuts every detail into a transparent layer aligned with the body. Optional style references (up to 3 images) guide the look of the character and backgrounds. Runs through the server so the API key stays private.
+- **AI collection by traits (Nano Banana)** — draw a base character (optionally guided by up to 3 style references), list traits and their values with rarity, then draw NFTs by hand or in batches. Every NFT is a whole picture of the same character with one value per trait; traits go into the NFT data. Images are kept in IndexedDB so paid generations survive a reload. Runs through the server so the API key stays private.
 - **Collection builder** — from layers (with rarity, manual edits of any NFT and 1-of-1 legendaries), from your own finished images, or algorithmic styles. Any size from 1 to 10,000; the builder suggests how many variants each layer needs.
 - **Animation** — per-layer motion (float, sway, pulse, spin, blink, shimmer).
 - **Tokens inside NFTs** — part of the mint price and/or your own token goes into every NFT. Withdrawals are locked while an NFT is listed for sale, so buyers get exactly what they see.
@@ -36,7 +36,7 @@ AI generation goes through OpenRouter and is off until the server has a key. Set
 | `GEN_DAILY_LIMIT` | `150` | Images per day for the whole site |
 | `GEN_IP_LIMIT` | `40` | Images per day per visitor |
 
-A full set of parts (base + ~15 details) is roughly 16 images, about $0.6 at ~$0.04 per image (estimate).
+Each NFT is one image, about $0.04 each (estimate): ~333 NFTs ≈ $13, ~1,000 NFTs ≈ $40, plus redraws.
 
 ### Deploy
 
@@ -48,7 +48,7 @@ A full set of parts (base + ~15 details) is roughly 16 images, about $0.6 at ~$0
 
 1. NEAR smart contracts: a collection factory and a NEP-171 NFT contract with per-token token balances (NEP-141), withdraw lock while listed, immutable code.
 2. Wallet connection (NEAR testnet), real minting and NFT media upload to IPFS / Arweave with animated files.
-3. Better layer extraction for AI parts, multiple base bodies, paid generation in NEAR.
+3. AI-suggested trait values, upload of AI images to IPFS / Arweave at launch, paid generation in NEAR.
 4. Independent audit before mainnet.
 
 ---
