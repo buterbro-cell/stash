@@ -504,7 +504,15 @@ const EN = {
   'Такой вариант уже есть':'That value already exists','Для этого признака нет готовых подсказок — впишите вариант сами':'No suggestions for this trait — type a value yourself','Впишите название признака':'Enter a trait name',
   'Добавьте варианты вручную: для этих признаков нет готовых подсказок':'Add values by hand: there are no suggestions for these traits','Все сочетания уже нарисованы. Добавьте варианты в признаки.':'All combinations are drawn already. Add values to the traits.',
   'Картинки ещё загружаются, подождите секунду':'Images are still loading, wait a second','NFT перенесены в конструктор':'NFTs sent to the builder',
-  'Волосы':'Hair','Одежда':'Outfit','Аксессуар':'Accessory','Признак':'Trait','+ Референс':'+ Reference',
+  'Волосы':'Hair','Режим генератора':'Generator mode','AI-коллекция':'AI collection','Шаблоны — бесплатно':'Templates — free','Генератор':'Generator','Как это работает':'How it works',
+  'Это бесплатные рисованные шаблоны: части собираются из готовых фигур. Свою коллекцию по описанию рисует вкладка «AI-коллекция».':'These are free drawn templates: parts are assembled from ready-made shapes. To draw your own collection from a description, use the “AI collection” tab.',
+  'Ваши NFT':'Your NFTs','Здесь появятся нарисованные NFT. Начните с персонажа слева.':'Your drawn NFTs will appear here. Start with a character on the left.','Персонажей':'Characters','Нарисовано':'Drawn','Дорисовать остальные':'Draw the rest','оценка':'estimate',
+  'В конструкторе у каждой NFT можно поменять персонажа и признаки и перерисовать её.':'In the builder you can change any NFT’s character and traits and redraw it.','Персонаж':'Character','+ Ещё персонаж':'+ Another character','Персонажи — нажмите, чтобы выбрать, с кем рисовать вручную':'Characters — tap one to pick who to draw by hand',
+  'Новый персонаж добавится к остальным. Можно поменять описание выше перед тем, как рисовать.':'A new character is added to the others. You can change the description above before drawing.',
+  'Только выбранный персонаж':'Only the selected character','Иначе «Нарисовать сами» берёт персонажей по очереди случайно.':'Otherwise “Draw them for me” picks characters at random.',
+  'Перерисовать с этими признаками':'Redraw with these traits','Перерисовываю…':'Redrawing…','Перерисовка работает на развёрнутом сайте с ключом OpenRouter.':'Redrawing works on the deployed site with an OpenRouter key.',
+  'Это обычная картинка без AI-признаков. Признаки можно менять у NFT, нарисованных в AI-генераторе.':'This is a regular image without AI traits. Traits can be changed on NFTs drawn in the AI generator.',
+  'Такая NFT уже есть в коллекции. Выберите другое сочетание.':'This NFT already exists in the collection. Pick another combination.','NFT перерисована':'NFT redrawn','Сначала нарисуйте персонажа':'Draw a character first','Одежда':'Outfit','Аксессуар':'Accessory','Признак':'Trait','+ Референс':'+ Reference',
   'Нейросеть возьмёт с них манеру рисования, цвета и детализацию, но не будет копировать самих персонажей. Используйте картинки, на которые у вас есть права.':'The AI takes the drawing manner, colours and level of detail from them, without copying the characters themselves. Use images you have the rights to.',
   'Нужна картинка до 8 МБ':'An image up to 8 MB is needed','Фоны':'Backgrounds','Головные уборы':'Headwear','Цветов тела (перекраска бесплатно)':'Body colours (recolouring is free)',
   'Пишите детали по-английски: так нейросеть понимает точнее.':'Write details in English: the model understands them more precisely.',
@@ -521,6 +529,11 @@ const RX = [
   [/^Рисую… (\d+) из (\d+)$/, (a, b) => `Drawing… ${a} of ${b}`],
   [/^Перенести (.+) NFT в конструктор$/, a => `Send ${a} NFTs to the builder`],
   [/^Добавлено вариантов: (\d+)$/, a => `Values added: ${a}`],
+  [/^Персонаж (\d+) · выбран$/, a => `Character ${a} · selected`],
+  [/^Персонаж (\d+)$/, a => `Character ${a}`],
+  [/^(Выбрать|Удалить) персонажа (\d+)$/, (v, a) => `${v === 'Выбрать' ? 'Select' : 'Delete'} character ${a}`],
+  [/^Изменить NFT (\d+)$/, a => `Edit NFT ${a}`],
+  [/^Персонаж удалён вместе с его NFT: (\d+)$/, a => `Character deleted along with its NFTs: ${a}`],
   [/^Удалить NFT (\d+)$/, a => `Delete NFT ${a}`],
   [/^#(\d+) следующая$/, n => `#${n} next`],
   [/^Внутри (.+)$/, x => 'Inside ' + T(x)],
@@ -1305,6 +1318,7 @@ function vCreate(){
             <p class="hint">Одна картинка — одна NFT. Порядок картинок — номера NFT. Можно выбрать сразу много файлов.</p>
             <div class="field" style="max-width:260px"><label for="f-fanim">Движение для всех картинок</label><select class="input" id="f-fanim">${FILE_ANIMS.map(([k, l]) => `<option value="${k}" ${d.fileAnim===k?'selected':''}>${l}</option>`).join('')}</select></div>
             <div class="gs" id="files"></div>
+            <div id="feditor"></div>
           </div>
           <div id="mode-algo" ${d.mode==='algo' ? '' : 'hidden'} style="display:flex;flex-direction:column;gap:14px">
             <p class="hint">Картинки не нужны: код рисует каждую NFT по её номеру, и все получаются разными.</p>
@@ -1442,11 +1456,39 @@ function removeLegend(i){
   }
   afterDraft(false);
 }
+let fEdit = null, fBusy = false, fErr = '';
+function renderFEditor(){
+  const box = $('#feditor'); if(!box) return;
+  const d = S.draft, f = d.files[fEdit];
+  if(fEdit === null || !f){ box.innerHTML = ''; return; }
+  const ai = f.vals && S.gen && S.gen.ai2 ? aiCfg() : null, on = AI.status && AI.status.enabled;
+  box.innerHTML = `<div class="editor"><div class="ea"><div class="art"><img src="${f.src}" alt="NFT ${fEdit+1}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><span class="num">#${fEdit+1}</span></div></div>
+    <div class="eb"><h3 class="d-m">NFT #${fEdit+1}</h3>
+    ${ai ? `<div class="field"><label for="fe-char">Персонаж</label><select class="input sm" id="fe-char">${aiChars().map((ch, i) => `<option value="${ch.id}" ${f.char === ch.id ? 'selected' : ''}>Персонаж ${i+1}</option>`).join('')}</select></div>
+      ${ai.traits.map((t, ti) => `<div class="field"><label for="fe-${ti}">${esc(t.name)}</label><select class="input sm" id="fe-${ti}">${t.variants.map((v, vi) => `<option value="${vi}" ${f.vals[ti] === vi ? 'selected' : ''}>${esc(v.label)}</option>`).join('')}</select></div>`).join('')}
+      ${fBusy ? '<p class="note">Перерисовываю…</p>' : ''}${fErr ? `<p class="err">${esc(fErr)}</p>` : ''}
+      ${on ? '' : '<p class="hint">Перерисовка работает на развёрнутом сайте с ключом OpenRouter.</p>'}
+      <div class="row"><button class="btn btn-main btn-sm" type="button" id="fe-redraw" ${on && !fBusy ? '' : 'disabled'}>${IC.shuffle} Перерисовать с этими признаками</button><button class="btn btn-line btn-sm" type="button" id="fe-close">Готово</button></div>`
+    : `<p class="hint">Это обычная картинка без AI-признаков. Признаки можно менять у NFT, нарисованных в AI-генераторе.</p><div class="row"><button class="btn btn-line btn-sm" type="button" id="fe-close">Готово</button></div>`}
+    </div></div>`;
+  $('#fe-close').onclick = () => { fEdit = null; fErr = ''; renderFiles(); };
+  const rd = $('#fe-redraw'); if(rd) rd.onclick = async () => {
+    const c = aiCfg(), ch = $('#fe-char').value, vals = c.traits.map((t, ti) => +$('#fe-' + ti).value);
+    const clash = c.items.find(x => x.id !== f.aiId && comboKey(x.vals, x.char) === comboKey(vals, ch));
+    if(clash){ fErr = 'Такая NFT уже есть в коллекции. Выберите другое сочетание.'; renderFEditor(); return; }
+    fBusy = true; fErr = ''; renderFEditor();
+    try{ const it = await aiDrawItem(vals, c.items.find(x => x.id === f.aiId) || null, ch); Object.assign(f, aiFileFrom(it, fEdit), {label:f.label}); save(); toast('NFT перерисована'); }
+    catch(e){ fErr = e.message; }
+    fBusy = false; renderFiles();
+  };
+}
 function renderFiles(){
   const d = S.draft, box = $('#files'); if(!box) return;
-  box.innerHTML = d.files.map((f, i) => `<div class="var"><div class="art">${cv('file', i)}<span class="num">#${i+1}</span><button class="x" type="button" data-fdel="${i}" aria-label="Удалить картинку ${i+1}">${IC.x}</button></div></div>`).join('')
+  box.innerHTML = d.files.map((f, i) => `<div class="var"><button class="tile" type="button" data-fedit="${i}" aria-pressed="${fEdit === i}" aria-label="Изменить NFT ${i+1}"><div class="art">${cv('file', i)}<span class="num">#${i+1}</span></div></button><div><button class="x" type="button" data-fdel="${i}" aria-label="Удалить картинку ${i+1}">${IC.x}</button></div></div>`).join('')
     + `<label class="add-var" for="up-files">+ Картинки</label><input class="sr" id="up-files" type="file" accept="image/png,image/webp,image/jpeg,image/gif" multiple>`;
-  $$('[data-fdel]').forEach(b => b.onclick = () => { d.files.splice(+b.dataset.fdel, 1); afterDraft(false); });
+  $$('[data-fedit]').forEach(b => b.onclick = async () => { fEdit = +b.dataset.fedit; fErr = ''; renderFiles(); if(!AI.status){ await aiStatus(); renderFEditor(); } });
+  $$('[data-fdel]').forEach(b => b.onclick = () => { d.files.splice(+b.dataset.fdel, 1); fEdit = null; afterDraft(false); });
+  renderFEditor();
   $('#up-files').onchange = ev => readFiles(ev.target.files, items => { d.files.push(...items.slice(0, Math.max(0, 10000 - d.files.length))); afterDraft(false); });
   collect();
 }
@@ -1631,12 +1673,22 @@ let genPrevDNA = [];
 function genPreview(){ genPrevDNA = genDNA(genLayers(), 9, S.gen.seed + 11); }
 
 function vGen(){
-  const G = S.gen, L = genLayers(), cmb = combos(L);
+  const G = S.gen, L = genLayers(), cmb = combos(L), tab = G.tab || 'ai';
+  const tabs = `<div class="seg" role="group" aria-label="Режим генератора"><button type="button" data-gtab="ai" aria-pressed="${tab === 'ai'}">AI-коллекция</button><button type="button" data-gtab="tpl" aria-pressed="${tab === 'tpl'}">Шаблоны — бесплатно</button></div>`;
+  if(tab === 'ai') return `<section class="split">
+    <div class="a" style="flex-basis:560px">
+      <div><p class="label">Генератор</p><h1 class="d-l">AI-коллекция по признакам</h1></div>
+      ${tabs}
+      <div id="ai-box"></div>
+    </div>
+    <div class="b stick" id="ai-side"></div>
+  </section>`;
   return `<section class="split">
     <div class="a" style="flex-basis:560px">
-      <div><p class="label">Генератор частей</p><h1 class="d-l">Части тела для будущей коллекции</h1></div>
+      <div><p class="label">Генератор</p><h1 class="d-l">Части тела для будущей коллекции</h1></div>
+      ${tabs}
       <p class="lead">Выберите палитру и сколько вариантов нужно в каждой части. Понравившиеся варианты закрепите замком, остальные перегенерируйте. Готовый набор одним нажатием уходит в конструктор.</p>
-      <div id="ai-box"></div>
+      <p class="hint">Это бесплатные рисованные шаблоны: части собираются из готовых фигур. Свою коллекцию по описанию рисует вкладка «AI-коллекция».</p>
       <div class="step" style="counter-increment:none">
         <div class="field"><span class="lbl">Палитра</span><div class="seg" role="group" aria-label="Палитра">${Object.entries(PALS).map(([k, v]) => `<button type="button" data-pal="${k}" aria-pressed="${G.pal === k}">${v.name}</button>`).join('')}</div></div>
         <div class="fields">${GPARTS.map(({k, name, max}) => `<div class="field"><label for="gc-${k}">${name}</label><input class="input mono" id="gc-${k}" data-gc="${k}" type="number" min="1" max="${max}" value="${G.counts[k]}"></div>`).join('')}</div>
@@ -1731,19 +1783,26 @@ async function addRefs(files){
   }
   save(); renderAI();
 }
-const comboKey = vals => vals.join('|');
-function aiCombos(){ return aiCfg().traits.reduce((p, t) => p * Math.max(1, t.variants.length), 1); }
-function aiTraitText(vals){ return aiCfg().traits.map((t, i) => `${t.name}: ${t.variants[vals[i]] ? t.variants[vals[i]].label : '—'}`).join('; '); }
+const comboKey = (vals, ch) => (ch || '') + '#' + vals.join('|');
+const charKey = id => 'char:' + id;
+function aiChars(){ const c = aiCfg(); c.chars = c.chars || []; if(!c.active || !c.chars.some(x => x.id === c.active)) c.active = c.chars[0] ? c.chars[0].id : null; return c.chars; }
+const charName = id => { const i = aiChars().findIndex(x => x.id === id); return i < 0 ? '—' : 'Персонаж ' + (i + 1); };
+function aiCombos(){ return Math.max(1, aiChars().length) * aiCfg().traits.reduce((p, t) => p * Math.max(1, t.variants.length), 1); }
+function aiTraitText(vals, ch){ return (ch ? charName(ch) + '; ' : '') + aiCfg().traits.map((t, i) => `${t.name}: ${t.variants[vals[i]] ? t.variants[vals[i]].label : '—'}`).join('; '); }
 function aiPrompt(vals){
   const c = aiCfg(), parts = c.traits.map((t, i) => { const v = t.variants[vals[i]]; return v && v.label !== 'none' ? `${poolFor(t.name) ? POOL_KEYS.find(([, re]) => re.test(t.name))[0] : t.name}: ${v.label}` : null; }).filter(Boolean);
   return `${c.style}. Draw the same character as in the first attached image: same face, same identity, same art style and proportions. Square NFT avatar, upper body portrait, front view, centered. ${parts.join('; ')}. Apply exactly these traits and nothing extra. No text, no watermark, no frame.` + (c.refs.length ? REF_NOTE : '');
 }
-async function aiRefImages(){ const c = aiCfg(), base = AIMG.get('base') || await IDB.get('base'); return [base].concat(c.refs).filter(Boolean); }
-async function aiDrawItem(vals, existing){
-  const img = await aiImage(aiPrompt(vals), await aiRefImages());
-  const src = await shrink(img), c = aiCfg();
-  let it = existing || c.items.find(x => comboKey(x.vals) === comboKey(vals));
-  if(!it){ it = {id:'n' + uid(), vals:vals.slice()}; c.items.push(it); }
+async function charImg(id){ const k = charKey(id); let v = AIMG.get(k); if(!v){ v = await IDB.get(k); if(v) AIMG.set(k, v); } return v; }
+async function aiRefImages(ch){ const c = aiCfg(), base = await charImg(ch); return [base].concat(c.refs).filter(Boolean); }
+async function aiDrawItem(vals, existing, ch){
+  const c = aiCfg(); ch = ch || (existing && existing.char) || c.active;
+  if(!ch) throw new Error('Сначала нарисуйте персонажа');
+  const img = await aiImage(aiPrompt(vals), await aiRefImages(ch));
+  const src = await shrink(img);
+  let it = existing || c.items.find(x => comboKey(x.vals, x.char) === comboKey(vals, ch));
+  if(!it){ it = {id:'n' + uid(), vals:vals.slice(), char:ch}; c.items.push(it); }
+  it.vals = vals.slice(); it.char = ch;
   AIMG.set(it.id, src); await IDB.put(it.id, src);
   return it;
 }
@@ -1753,11 +1812,12 @@ async function aiRun(list){
   await pool(list.map(fn => async () => { try{ await fn(); }catch(e){ AI.log.push(e.message); } AI.done++; save(); renderAI(); }), 3);
   AI.busy = false; save(); renderAI();
 }
-function aiNextCombos(n){
-  const c = aiCfg(), have = new Set(c.items.map(x => comboKey(x.vals))), out = [], r = rng(Math.floor(Math.random()*1e9));
+function aiNextCombos(n, onlyActive){
+  const c = aiCfg(), chars = onlyActive ? [c.active] : aiChars().map(x => x.id), have = new Set(c.items.map(x => comboKey(x.vals, x.char))), out = [], r = rng(Math.floor(Math.random()*1e9));
+  if(!chars.length || !chars[0]) return out;
   for(let tries=0; out.length < n && tries < n*80; tries++){
-    const v = c.traits.map(t => pick(r, t.variants)); const k = comboKey(v);
-    if(!have.has(k)){ have.add(k); out.push(v); }
+    const ch = chars[Math.floor(r()*chars.length)], v = c.traits.map(t => pick(r, t.variants)), k = comboKey(v, ch);
+    if(!have.has(k)){ have.add(k); out.push({v, ch}); }
   }
   return out;
 }
@@ -1780,11 +1840,11 @@ function aiAdviceHTML(){
 
 function renderAI(){
   const box = $('#ai-box'); if(!box) return;
-  const st = AI.status, c = aiCfg(), on = st && st.enabled, base = AIMG.get('base');
+  const st = AI.status, c = aiCfg(), on = st && st.enabled, chars = aiChars(), base = chars.length > 0;
   const made = c.items.length, left = Math.max(0, c.target - made);
   const shown = c.items.slice(0, AI.show);
   box.innerHTML = `<div class="step" style="counter-increment:none">
-    <div class="step-h"><h2 class="d-m">AI-коллекция по признакам</h2><span class="tagp" style="margin-left:auto">Nano Banana</span></div>
+    <div class="step-h"><h2 class="d-m">Как это работает</h2><span class="tagp" style="margin-left:auto">Nano Banana</span></div>
     <p class="hint">Нейросеть рисует персонажа, а потом каждую NFT целиком: тот же персонаж с вашим набором признаков. Ничего не съезжает, а признаки записываются в данные NFT, как у обычных коллекций.</p>
     ${!st ? '<p class="note">Проверяю подключение…</p>' : on ? `<p class="note ok">Подключено: ${esc(st.model)}. Осталось генераций сегодня: ${st.left}.</p>` : '<p class="note">AI-генерация работает на развёрнутом сайте, когда в настройках сервера задан ключ OPENROUTER_API_KEY. Здесь, в демо, она недоступна.</p>'}
 
@@ -1794,9 +1854,14 @@ function renderAI(){
       <div class="gs" style="grid-template-columns:repeat(auto-fill,minmax(96px,1fr))">${c.refs.map((r, i) => `<div class="var"><div class="art"><img src="${r}" alt="Референс ${i+1}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><button class="x" type="button" data-refdel="${i}" aria-label="Удалить референс ${i+1}">${IC.x}</button></div></div>`).join('')}
         ${c.refs.length < REF_MAX ? `<label class="add-var" for="ai-ref">+ Референс</label><input class="sr" id="ai-ref" type="file" accept="image/png,image/jpeg,image/webp" multiple>` : ''}</div>
       <span class="hint">Нейросеть возьмёт с них манеру рисования, цвета и детализацию. Используйте картинки, на которые у вас есть права.</span></div>
+    ${base ? `<div class="field"><span class="lbl">Персонажи — нажмите, чтобы выбрать, с кем рисовать вручную</span>
+      <div class="gs" style="grid-template-columns:repeat(auto-fill,minmax(110px,1fr))">${chars.map((ch, i) => `<div class="var">
+        <button class="tile" type="button" data-char="${ch.id}" aria-pressed="${c.active === ch.id}" aria-label="Выбрать персонажа ${i+1}"><div class="art">${AIMG.get(charKey(ch.id)) ? `<img src="${AIMG.get(charKey(ch.id))}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">` : ''}<span class="num">${i+1}</span></div></button>
+        <button class="x" type="button" data-chdel="${ch.id}" aria-label="Удалить персонажа ${i+1}" style="z-index:3">${IC.x}</button>
+        <span class="vn">Персонаж ${i+1}${c.active === ch.id ? ' · выбран' : ''}</span></div>`).join('')}</div></div>` : ''}
     <div class="row" style="align-items:center">
-      ${base ? `<div class="art" style="width:120px"><img src="${base}" alt="Базовый персонаж" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></div>` : ''}
-      <button class="btn ${base ? 'btn-line' : 'btn-main'}" id="ai-base" type="button" ${on && !AI.busy ? '' : 'disabled'}>${base ? 'Нарисовать другого персонажа' : 'Нарисовать персонажа'}</button>
+      <button class="btn ${base ? 'btn-line' : 'btn-main'}" id="ai-base" type="button" ${on && !AI.busy ? '' : 'disabled'}>${base ? '+ Ещё персонаж' : 'Нарисовать персонажа'}</button>
+      ${base ? '<span class="hint">Новый персонаж добавится к остальным. Можно поменять описание выше перед тем, как рисовать.</span>' : ''}
     </div>
 
     <h3 class="d-m" style="font-size:16px;margin-top:6px">2. Признаки</h3>
@@ -1812,25 +1877,42 @@ function renderAI(){
     ${aiAdviceHTML()}
 
     <h3 class="d-m" style="font-size:16px;margin-top:6px">3. Рисуем NFT</h3>
-    <div class="fields">${c.traits.map((t, ti) => `<div class="field"><label for="ai-pick-${ti}">${esc(t.name)}</label><select class="input sm" id="ai-pick-${ti}" data-pick="${ti}">${t.variants.map((v, vi) => `<option value="${vi}">${esc(v.label)}</option>`).join('')}</select></div>`).join('')}</div>
+    <div class="fields">${base ? `<div class="field"><label for="ai-pick-char">Персонаж</label><select class="input sm" id="ai-pick-char">${chars.map((ch, i) => `<option value="${ch.id}" ${c.active === ch.id ? 'selected' : ''}>Персонаж ${i+1}</option>`).join('')}</select></div>` : ''}${c.traits.map((t, ti) => `<div class="field"><label for="ai-pick-${ti}">${esc(t.name)}</label><select class="input sm" id="ai-pick-${ti}" data-pick="${ti}">${t.variants.map((v, vi) => `<option value="${vi}">${esc(v.label)}</option>`).join('')}</select></div>`).join('')}</div>
     <div class="row">
       <button class="btn btn-line" id="ai-one" type="button" ${on && base && !AI.busy ? '' : 'disabled'}>Собрать вручную: нарисовать эту NFT</button>
       <span class="inline" style="align-items:center"><input class="input sm mono" id="ai-batch" inputmode="numeric" value="${Math.min(9, left || 9)}" style="width:72px;flex:none" aria-label="Сколько нарисовать">
       <button class="btn btn-main" id="ai-many" type="button" ${on && base && !AI.busy ? '' : 'disabled'}>Нарисовать сами</button></span>
     </div>
+    ${chars.length > 1 ? `<label class="opt" for="ai-only" style="padding:10px 14px"><input type="checkbox" id="ai-only" ${c.onlyActive ? 'checked' : ''}><span><b>Только выбранный персонаж</b><p>Иначе «Нарисовать сами» берёт персонажей по очереди случайно.</p></span></label>` : ''}
     ${!base ? '<p class="hint">Сначала нарисуйте персонажа: по нему нейросеть держит одно лицо во всей коллекции.</p>' : ''}
     <p class="hint">Готово ${fmt(made,0)} из ${fmt(c.target,0)} NFT. Осталось ${fmt(left,0)} — примерно $${(left*AI_PRICE).toFixed(2)}.</p>
     ${AI.busy ? `<p class="note">Рисую… ${AI.done} из ${AI.total}</p>` : ''}
     ${AI.log.length ? `<p class="note warn">Не получилось: ${esc(AI.log.slice(-3).join('; '))}. Попробуйте ещё раз или переформулируйте.</p>` : ''}
     ${made ? `<div class="gs" style="grid-template-columns:repeat(auto-fill,minmax(110px,1fr))">${shown.map((it, i) => `<div class="var">
-        <div class="art" title="${esc(aiTraitText(it.vals))}">${AIMG.get(it.id) ? `<img src="${AIMG.get(it.id)}" alt="NFT ${i+1}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">` : ''}<span class="num">#${i+1}</span>
+        <div class="art" title="${esc(aiTraitText(it.vals, it.char))}">${AIMG.get(it.id) ? `<img src="${AIMG.get(it.id)}" alt="NFT ${i+1}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">` : ''}<span class="num">#${i+1}</span>
           <button class="x" type="button" data-idel="${it.id}" aria-label="Удалить NFT ${i+1}">${IC.x}</button></div>
         <button class="btn btn-sm btn-line" type="button" data-iredo="${it.id}" ${on && base && !AI.busy ? '' : 'disabled'} style="min-height:34px;font-size:12.5px">${IC.shuffle} Перерисовать</button></div>`).join('')}</div>
       ${made > AI.show ? `<button class="btn btn-sm btn-line" type="button" id="ai-more">Показать ещё</button>` : ''}
       <div class="row"><button class="btn btn-main" id="ai-send" type="button" ${AI.busy ? 'disabled' : ''}>Перенести ${fmt(made,0)} NFT в конструктор ${IC.arrow}</button></div>
       <p class="hint">В конструкторе откроется режим «Каждую NFT сам» с этими картинками и их признаками.</p>` : ''}
   </div>`;
-  bindAIBox();
+  bindAIBox(); renderAISide();
+}
+function renderAISide(){
+  const box = $('#ai-side'); if(!box) return;
+  const c = aiCfg(), items = c.items.filter(it => AIMG.get(it.id)), last = items.slice(-9).reverse(), made = c.items.length, left = Math.max(0, c.target - made);
+  box.innerHTML = `<span class="label">Ваши NFT</span>
+    ${last.length ? `<div class="g3">${last.map(it => `<div class="art" title="${esc(aiTraitText(it.vals, it.char))}"><img src="${AIMG.get(it.id)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></div>`).join('')}</div>`
+      : `<div class="empty" style="padding:24px"><p class="hint">Здесь появятся нарисованные NFT. Начните с персонажа слева.</p></div>`}
+    <div class="sum">
+      <div class="sr-row"><span>Персонажей</span><b>${aiChars().length}</b></div>
+      <div class="sr-row"><span>Возможных сочетаний</span><b class="${aiCombos() >= c.target ? 'big-ok' : 'big-bad'}">${fmt(aiCombos(),0)}</b></div>
+      <div class="sr-row"><span>Нарисовано</span><b>${fmt(made,0)} / ${fmt(c.target,0)}</b></div>
+      <div class="sr-row"><span>Дорисовать остальные<small>оценка</small></span><b>≈ $${(left*AI_PRICE).toFixed(2)}</b></div>
+    </div>
+    <button class="btn btn-main" id="ai-send2" type="button" ${made && !AI.busy ? '' : 'disabled'}>Перенести в конструктор ${IC.arrow}</button>
+    <p class="hint">В конструкторе у каждой NFT можно поменять персонажа и признаки и перерисовать её.</p>`;
+  const b = $('#ai-send2'); if(b) b.onclick = aiSend;
 }
 function bindAIBox(){
   const c = aiCfg();
@@ -1853,32 +1935,48 @@ function bindAIBox(){
   const tu = $('#ai-topup'); if(tu) tu.onclick = aiTopUp;
   const b0 = $('#ai-base'); if(b0) b0.onclick = async () => {
     AI.busy = true; AI.log = []; AI.total = 1; AI.done = 0; renderAI();
-    try{ const img = await aiImage(`${c.style}. One single character, front view, upper body portrait, centered, simple plain light background, clean NFT avatar style. No text, no watermark.` + (c.refs.length ? REF_NOTE : ''), c.refs);
-      const src = await shrink(img, 768); AIMG.set('base', src); await IDB.put('base', src); c.hasBase = true; }catch(e){ AI.log.push(e.message); }
+    try{ const others = aiChars().length ? ' Make this a new, different character from the same collection: same art style, different face and look.' : '';
+      const img = await aiImage(`${c.style}. One single character, front view, upper body portrait, centered, simple plain light background, clean NFT avatar style. No text, no watermark.` + others + (c.refs.length ? REF_NOTE : ''), c.refs);
+      const src = await shrink(img, 768), id = 'c' + uid(); AIMG.set(charKey(id), src); await IDB.put(charKey(id), src); aiChars().push({id}); c.active = id; }catch(e){ AI.log.push(e.message); }
     AI.busy = false; save(); renderAI(); };
-  const b1 = $('#ai-one'); if(b1) b1.onclick = () => { const vals = c.traits.map((t, ti) => +($('#ai-pick-' + ti) || {}).value || 0); aiRun([() => aiDrawItem(vals)]); };
-  const b2 = $('#ai-many'); if(b2) b2.onclick = () => { const n = Math.max(1, Math.min(50, Math.floor(num($('#ai-batch').value)) || 1)), combos = aiNextCombos(n);
-    if(!combos.length){ toast('Все сочетания уже нарисованы. Добавьте варианты в признаки.'); return; } aiRun(combos.map(v => () => aiDrawItem(v))); };
+  $$('[data-char]').forEach(b => b.onclick = () => { c.active = b.dataset.char; save(); renderAI(); });
+  $$('[data-chdel]').forEach(b => b.onclick = () => { const id = b.dataset.chdel, n = c.items.filter(x => x.char === id).length;
+    c.chars = aiChars().filter(x => x.id !== id); c.items = c.items.filter(x => x.char !== id); IDB.del(charKey(id)); AIMG.delete(charKey(id)); save(); renderAI(); if(n) toast(`Персонаж удалён вместе с его NFT: ${n}`); });
+  const pc = $('#ai-pick-char'); if(pc) pc.onchange = () => { c.active = pc.value; save(); renderAI(); };
+  const oa = $('#ai-only'); if(oa) oa.onchange = () => { c.onlyActive = oa.checked; save(); };
+  const b1 = $('#ai-one'); if(b1) b1.onclick = () => { const vals = c.traits.map((t, ti) => +($('#ai-pick-' + ti) || {}).value || 0); aiRun([() => aiDrawItem(vals, null, c.active)]); };
+  const b2 = $('#ai-many'); if(b2) b2.onclick = () => { const n = Math.max(1, Math.min(50, Math.floor(num($('#ai-batch').value)) || 1)), combos = aiNextCombos(n, c.onlyActive && aiChars().length > 1);
+    if(!combos.length){ toast('Все сочетания уже нарисованы. Добавьте варианты в признаки.'); return; } aiRun(combos.map(o => () => aiDrawItem(o.v, null, o.ch))); };
   $$('[data-iredo]').forEach(b => b.onclick = () => { const it = c.items.find(x => x.id === b.dataset.iredo); if(it) aiRun([() => aiDrawItem(it.vals, it)]); });
   $$('[data-idel]').forEach(b => b.onclick = () => { const id = b.dataset.idel; c.items = c.items.filter(x => x.id !== id); AIMG.delete(id); IDB.del(id); save(); renderAI(); });
   const mo = $('#ai-more'); if(mo) mo.onclick = () => { AI.show += 48; renderAI(); };
-  const sd = $('#ai-send'); if(sd) sd.onclick = () => {
-    const d = S.draft, ready = c.items.filter(it => AIMG.get(it.id));
+  const sd = $('#ai-send'); if(sd) sd.onclick = aiSend;
+}
+function aiSend(){
+  { const c = aiCfg(), d = S.draft, ready = c.items.filter(it => AIMG.get(it.id));
     if(!ready.length){ toast('Картинки ещё загружаются, подождите секунду'); return; }
     d.mode = 'files'; d.fileAnim = 'none';
-    d.files = ready.map((it, i) => ({src:AIMG.get(it.id), label:'#' + (i + 1), traits:c.traits.map((t, ti) => [t.name, t.variants[it.vals[ti]] ? t.variants[it.vals[ti]].label : '—'])}));
+    d.files = ready.map((it, i) => aiFileFrom(it, i));
     editIdx = null; save(); toast('NFT перенесены в конструктор'); location.hash = 'create';
-  };
+  }
+}
+function aiFileFrom(it, i){ const c = aiCfg(); return {src:AIMG.get(it.id), label:'#' + (i + 1), aiId:it.id, char:it.char, vals:it.vals.slice(),
+  traits:[['Персонаж', charName(it.char)]].concat(c.traits.map((t, ti) => [t.name, t.variants[it.vals[ti]] ? t.variants[it.vals[ti]].label : '—']))}; }
+async function aiMigrate(){
+  const c = aiCfg(); if(c.chars && c.chars.length) return;
+  const old = await IDB.get('base');
+  if(old){ const id = 'c' + uid(); await IDB.put(charKey(id), old); AIMG.set(charKey(id), old); c.chars = [{id}]; c.active = id; c.items.forEach(it => { if(!it.char) it.char = id; }); save(); }
 }
 async function bindAI(){
-  const c = aiCfg(); renderAI(); await aiStatus();
-  const base = AIMG.get('base') || await IDB.get('base'); if(base) AIMG.set('base', base);
+  const c = aiCfg(); renderAI(); await aiStatus(); await aiMigrate();
+  await Promise.all(aiChars().map(ch => charImg(ch.id)));
   await Promise.all(c.items.filter(it => !AIMG.get(it.id)).map(async it => { const s = await IDB.get(it.id); if(s) AIMG.set(it.id, s); }));
   renderAI();
 }
 
 function bindGen(){
-  bindAI();
+  $$('[data-gtab]').forEach(b => b.onclick = () => { S.gen.tab = b.dataset.gtab; save(); route(); });
+  if((S.gen.tab || 'ai') === 'ai'){ bindAI(); return; }
   const G = S.gen, rerender = () => { genPreview(); save(); const y = scrollY; route(); scrollTo(0, y); };
   $$('[data-pal]').forEach(b => b.onclick = () => { G.pal = b.dataset.pal; G.seed = Math.floor(Math.random()*1e6); fillParts(true); rerender(); });
   $$('[data-gc]').forEach(el => el.onchange = () => { const k = el.dataset.gc, mx = GPARTS.find(x => x.k === k).max; G.counts[k] = Math.max(1, Math.min(mx, Math.floor(num(el.value)) || 1)); fillParts(false); rerender(); });
