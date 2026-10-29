@@ -484,7 +484,16 @@ const EN = {
   'Билет на событие, внутри которого лежит часть цены. Сходил — забрал.':'An event ticket with part of its price inside. Attend, then withdraw it.','В каждой NFT лежит ваш мемкоин. Купил NFT — стал держателем токена.':'Every NFT holds your memecoin. Buy the NFT and you hold the token.',
   'Продавец не может опустошить NFT перед продажей.':'A seller can’t empty an NFT right before a sale.','Пока NFT выставлена на продажу, достать содержимое нельзя.':'While an NFT is listed for sale, its contents can’t be taken out.',
   'NFT сделаны по стандарту NEAR (NEP-171), поэтому видны в кошельках и маркетах NEAR. Содержимое любой NFT можно проверить по ссылке на её страницу.':'NFTs follow the NEAR standard (NEP-171), so they show up in NEAR wallets and marketplaces. Anyone can check an NFT’s contents via the link to its page.',
-  'Перед запуском в основной сети контракт, который хранит чужие деньги, нужно проверить независимым аудитом.':'Before mainnet launch, a contract that holds other people’s money must pass an independent audit.'
+  'Перед запуском в основной сети контракт, который хранит чужие деньги, нужно проверить независимым аудитом.':'Before mainnet launch, a contract that holds other people’s money must pass an independent audit.',
+  'AI-генерация по описанию':'AI generation from a description',
+  'Опишите стиль и перечислите детали через запятую. Сначала нейросеть рисует персонажа без лица, потом добавляет ему каждую деталь, а сайт вырезает её в отдельный слой.':'Describe the style and list the details, separated by commas. The AI first draws a faceless character, then adds each detail to it, and the site cuts every detail out into its own layer.',
+  'Проверяю подключение…':'Checking the connection…',
+  'AI-генерация работает на развёрнутом сайте, когда в настройках сервера задан ключ OPENROUTER_API_KEY. Здесь, в демо, она недоступна.':'AI generation works on the deployed site once the server has an OPENROUTER_API_KEY set. It isn’t available in this demo.',
+  'Стиль персонажа':'Character style','Фоны':'Backgrounds','Головные уборы':'Headwear','Цветов тела (перекраска бесплатно)':'Body colours (recolouring is free)',
+  'Пишите детали по-английски: так нейросеть понимает точнее.':'Write details in English: the model understands them more precisely.',
+  'Базовый персонаж':'Base character','Базовый персонаж готов. Не нравится — сгенерируйте заново.':'The base character is ready. Don’t like it? Generate a new one.',
+  '1. Новый персонаж':'1. New character','1. Нарисовать персонажа':'1. Draw the character','2. Нарисовать детали':'2. Draw the details','Детали готовы':'Details are ready',
+  'Генерирую… базовый персонаж':'Generating… base character'
 };
 const VERB = {'Удалить вариант':'Delete variant','Редкость':'Rarity of','Закрепить':'Lock','Открепить':'Unlock','Удалить':'Delete','Удалить картинку':'Delete image','Открыть NFT':'Open NFT'};
 const T = s => { const r = trCore(s); return r == null ? s : r; };
@@ -528,7 +537,11 @@ const RX = [
   [/^Тело (\d+)$/, n => `Body ${n}`],
   [/^Слой (\d+)$/, n => `Layer ${n}`],
   [/^(Удалить вариант|Удалить картинку|Открыть NFT|Редкость|Закрепить|Открепить|Удалить) (.+)$/, (v, x) => `${VERB[v]} ${T(x)}`],
-  [/^Максимум (\d+)/, a => `Maximum ${a}`]
+  [/^Максимум (\d+)/, a => `Maximum ${a}`],
+  [/^Подключено: (.+)\. Осталось генераций сегодня: (\d+)\.$/, (a, b) => `Connected: ${a}. Generations left today: ${b}.`],
+  [/^Будет (\d+) картинок, примерно \$(.+) на балансе OpenRouter\.$/, (a, b) => `That’s ${a} images, about $${b} from your OpenRouter balance.`],
+  [/^Генерирую… (\d+) из (\d+)$/, (a, b) => `Generating… ${a} of ${b}`],
+  [/^Не получилось: (.+)\. Попробуйте ещё раз или переформулируйте\.$/, a => `Didn’t work: ${a}. Try again or rephrase.`]
 ];
 const PHR = [['у создателя','held by creator'],[' шт',' items'],['токенов','tokens'],['пример','example'],[' и ',' and '],['следующая','next']];
 function trCore(core){
@@ -1595,6 +1608,7 @@ function vGen(){
     <div class="a" style="flex-basis:560px">
       <div><p class="label">Генератор частей</p><h1 class="d-l">Части тела для будущей коллекции</h1></div>
       <p class="lead">Выберите палитру и сколько вариантов нужно в каждой части. Понравившиеся варианты закрепите замком, остальные перегенерируйте. Готовый набор одним нажатием уходит в конструктор.</p>
+      <div id="ai-box"></div>
       <div class="step" style="counter-increment:none">
         <div class="field"><span class="lbl">Палитра</span><div class="seg" role="group" aria-label="Палитра">${Object.entries(PALS).map(([k, v]) => `<button type="button" data-pal="${k}" aria-pressed="${G.pal === k}">${v.name}</button>`).join('')}</div></div>
         <div class="fields">${GPARTS.map(({k, name, max}) => `<div class="field"><label for="gc-${k}">${name}</label><input class="input mono" id="gc-${k}" data-gc="${k}" type="number" min="1" max="${max}" value="${G.counts[k]}"></div>`).join('')}</div>
@@ -1607,7 +1621,6 @@ function vGen(){
             <button class="lk" type="button" data-glock="${GPARTS[li].k}-${vi}" aria-pressed="${!!v.lock}" aria-label="${v.lock ? 'Открепить' : 'Закрепить'} ${esc(v.label)}">${IC.lock}</button>
             <button class="x" type="button" data-gdel="${GPARTS[li].k}-${vi}" aria-label="Удалить ${esc(v.label)}">${IC.x}</button></div>
           <span class="vn">${esc(v.label)}</span></div>`).join('')}</div></div>`).join('')}
-      <div class="soon">${IC.spark}<span><b>Скоро: генерация по описанию.</b> Напишите «пиксельная сова в кепке», и нейросеть нарисует части в одном стиле. Для этого подключим сервис генерации картинок.</span></div>
     </div>
     <div class="b stick">
       <div class="row" style="justify-content:space-between;align-items:center"><span class="label">Так будут выглядеть NFT</span><button class="btn btn-line btn-sm" id="g-prev" type="button">Другие</button></div>
@@ -1621,7 +1634,120 @@ function vGen(){
     </div>
   </section>`;
 }
+/* ---------- AI part generation (Nano Banana via OpenRouter, through our server) ----------
+   Flow: 1) a faceless base character on flat green; 2) every detail is an edit of that base
+   ("add a red cap, change nothing else"); the browser keeps only the pixels that changed, so each
+   detail becomes a transparent layer that lines up with the body. Backgrounds are generated whole. */
+const AI = {status:null, base:null, busy:false, done:0, total:0, log:[]};
+const AI_PRICE = 0.04; // ≈ USD per image, estimate
+const AI_DEFAULTS = {style:'cute cartoon owl, thick clean outlines, flat colors, NFT avatar style',
+  bg:'sunset sky, mint gradient, night city lights, desert dunes', eyes:'big round eyes, sleepy eyes, angry eyes, cool sunglasses',
+  mouth:'smile, open mouth with tongue, tiny beak', hat:'red baseball cap, golden crown, cowboy hat, wizard hat', recolor:4};
+function aiCfg(){ S.gen.ai = Object.assign({}, AI_DEFAULTS, S.gen.ai || {}); return S.gen.ai; }
+const aiList = s => String(s || '').split(',').map(x => x.trim()).filter(Boolean).slice(0, 12);
+async function aiStatus(){
+  if(AI.status) return AI.status;
+  try{ const r = await fetch('api/ai/status', {cache:'no-store'}); AI.status = r.ok ? await r.json() : {enabled:false, reason:'offline'}; }
+  catch(e){ AI.status = {enabled:false, reason:'offline'}; }
+  return AI.status;
+}
+async function aiImage(prompt, image){
+  const r = await fetch('api/ai/image', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt, image})});
+  const j = await r.json().catch(() => ({}));
+  if(!r.ok || !j.image) throw new Error(j.error || ('HTTP ' + r.status));
+  if(typeof j.left === 'number' && AI.status) AI.status.left = j.left;
+  return j.image;
+}
+function loadImg(src){ return new Promise((ok, bad) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => bad(new Error('image')); im.src = src; }); }
+const SZ = 512;
+function toData(im){ const c = document.createElement('canvas'); c.width = c.height = SZ; const x = c.getContext('2d'); x.drawImage(im, 0, 0, SZ, SZ); return x.getImageData(0, 0, SZ, SZ); }
+function toURL(data, type='image/png', q){ const c = document.createElement('canvas'); c.width = c.height = SZ; c.getContext('2d').putImageData(data, 0, 0); return c.toDataURL(type, q); }
+const greenness = (r, g, b) => g - Math.max(r, b);
+function chromaCut(d){
+  const o = new ImageData(new Uint8ClampedArray(d.data), SZ, SZ), p = o.data;
+  for(let i=0;i<p.length;i+=4){ const gr = greenness(p[i], p[i+1], p[i+2]);
+    if(gr > 70 && p[i+1] > 120) p[i+3] = 0;
+    else if(gr > 30){ p[i+3] = Math.round(255 * (70 - gr) / 40); p[i+1] = Math.max(p[i], p[i+2]); } }
+  return o;
+}
+function diffLayer(base, ed){
+  const a = base.data, b = ed.data, n = SZ*SZ, m = new Uint8Array(n);
+  for(let k=0;k<n;k++){ const i = k*4, dd = Math.abs(a[i]-b[i]) + Math.abs(a[i+1]-b[i+1]) + Math.abs(a[i+2]-b[i+2]);
+    if(dd > 70 && !(greenness(b[i], b[i+1], b[i+2]) > 70 && b[i+1] > 120)) m[k] = 1; }
+  const open = (src, keep) => { const out = new Uint8Array(n); for(let y=1;y<SZ-1;y++) for(let x=1;x<SZ-1;x++){ const k = y*SZ+x; let c = 0;
+    for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) c += src[k + dy*SZ + dx]; out[k] = keep(c, src[k]) ? 1 : 0; } return out; };
+  const er = open(m, (c, v) => v && c >= 6), di = open(er, (c) => c >= 1);
+  let cnt = 0; const o = new ImageData(new Uint8ClampedArray(b), SZ, SZ);
+  for(let k=0;k<n;k++){ if(di[k]) cnt++; else o.data[k*4+3] = 0; }
+  return {data:o, cover: cnt / n};
+}
+function recolor(d, deg){
+  const c = document.createElement('canvas'); c.width = c.height = SZ; c.getContext('2d').putImageData(d, 0, 0);
+  const c2 = document.createElement('canvas'); c2.width = c2.height = SZ; const x = c2.getContext('2d');
+  x.filter = `hue-rotate(${deg}deg)`; x.drawImage(c, 0, 0); return c2.toDataURL('image/png');
+}
+function aiVariant(src, label){ return {id:uid(), kind:'img', src, label, w:10}; }
+async function pool(tasks, n){ let i = 0; const run = async () => { while(i < tasks.length){ const t = tasks[i++]; await t(); } }; await Promise.all(Array.from({length:n}, run)); }
+
+async function aiMakeBase(){
+  const c = aiCfg();
+  const prompt = `${c.style}. One single character, front view, centered, the character fills about 60% of a square frame, on a perfectly flat solid pure green (#00FF00) background with no shadows, no gradient, no text. Blank face: no eyes, no mouth, no hat and no accessories.`;
+  AI.base = await aiImage(prompt);
+}
+async function aiMakeParts(){
+  const c = aiCfg(), baseIm = await loadImg(AI.base), baseD = toData(baseIm);
+  const out = {bg:[], body:[], eyes:[], mouth:[], hat:[aiVariant(null, 'Нет')]};
+  const body = toURL(chromaCut(baseD));
+  out.body.push(aiVariant(body, 'Тело 1'));
+  const nRe = Math.max(0, Math.min(8, Math.floor(num(c.recolor)) || 0));
+  if(nRe > 1){ const cut = chromaCut(baseD); for(let k=1;k<nRe;k++) out.body.push(aiVariant(recolor(cut, Math.round(360*k/nRe)), 'Тело ' + (k + 1))); }
+  const jobs = [];
+  aiList(c.bg).forEach(item => jobs.push(async () => {
+    const img = await aiImage(`${c.style}. Background scene only for an NFT avatar, no characters, no text, no frame: ${item}. Square image.`);
+    out.bg.push(aiVariant(toURL(toData(await loadImg(img)), 'image/jpeg', .86), item)); }));
+  [['eyes', c.eyes], ['mouth', c.mouth], ['hat', c.hat]].forEach(([k, list]) => aiList(list).forEach(item => jobs.push(async () => {
+    const img = await aiImage(`Edit this image: add ${item} to the character. Keep everything else exactly the same: the same character, the same pose, the same position and size, the same flat green background. Change nothing except adding ${item}.`, AI.base);
+    const r = diffLayer(baseD, toData(await loadImg(img)));
+    if(r.cover < .002 || r.cover > .5){ AI.log.push(item); return; }
+    out[k].push(aiVariant(toURL(r.data), item)); })));
+  AI.total = jobs.length; AI.done = 0; renderAI();
+  await pool(jobs.map(j => async () => { try{ await j(); }catch(e){ AI.log.push(e.message); } AI.done++; renderAI(); }), 3);
+  if(!out.bg.length) out.bg.push(aiVariant(null, 'Нет'));
+  ['bg','body','eyes','mouth','hat'].forEach(k => { S.gen.parts[k] = out[k]; S.gen.counts[k] = out[k].length; });
+}
+function aiCost(){ const c = aiCfg(); return 1 + aiList(c.bg).length + aiList(c.eyes).length + aiList(c.mouth).length + aiList(c.hat).length; }
+function renderAI(){
+  const box = $('#ai-box'); if(!box) return;
+  const st = AI.status, c = aiCfg(), on = st && st.enabled, n = aiCost();
+  box.innerHTML = `<div class="step" style="counter-increment:none">
+    <div class="step-h"><h2 class="d-m">AI-генерация по описанию</h2><span class="tagp" style="margin-left:auto">Nano Banana</span></div>
+    <p class="hint">Опишите стиль и перечислите детали через запятую. Сначала нейросеть рисует персонажа без лица, потом добавляет ему каждую деталь, а сайт вырезает её в отдельный слой.</p>
+    ${!st ? '<p class="note">Проверяю подключение…</p>' : on ? `<p class="note ok">Подключено: ${esc(st.model)}. Осталось генераций сегодня: ${st.left}.</p>` : '<p class="note">AI-генерация работает на развёрнутом сайте, когда в настройках сервера задан ключ OPENROUTER_API_KEY. Здесь, в демо, она недоступна.</p>'}
+    <div class="field"><label for="ai-style">Стиль персонажа</label><textarea class="input" id="ai-style" rows="2" style="resize:vertical">${esc(c.style)}</textarea></div>
+    <div class="fields">
+      <div class="field"><label for="ai-bg">Фоны</label><input class="input" id="ai-bg" value="${esc(c.bg)}"></div>
+      <div class="field"><label for="ai-eyes">Глаза</label><input class="input" id="ai-eyes" value="${esc(c.eyes)}"></div>
+      <div class="field"><label for="ai-mouth">Рот</label><input class="input" id="ai-mouth" value="${esc(c.mouth)}"></div>
+      <div class="field"><label for="ai-hat">Головные уборы</label><input class="input" id="ai-hat" value="${esc(c.hat)}"></div>
+      <div class="field"><label for="ai-recolor">Цветов тела (перекраска бесплатно)</label><input class="input mono" id="ai-recolor" type="number" min="1" max="8" value="${esc(c.recolor)}"></div>
+    </div>
+    <p class="hint"><span>Будет ${n} картинок, примерно $${(n*AI_PRICE).toFixed(2)} на балансе OpenRouter.</span> <span>Пишите детали по-английски: так нейросеть понимает точнее.</span></p>
+    ${AI.base ? `<div class="row" style="align-items:center"><div class="art" style="width:110px">${''}<img src="${AI.base}" alt="Базовый персонаж" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"></div><span class="hint">Базовый персонаж готов. Не нравится — сгенерируйте заново.</span></div>` : ''}
+    ${AI.busy ? `<p class="note">Генерирую… ${AI.total ? AI.done + ' из ' + AI.total : 'базовый персонаж'}</p>` : ''}
+    ${AI.log.length ? `<p class="note warn">Не получилось: ${esc(AI.log.slice(-4).join('; '))}. Попробуйте ещё раз или переформулируйте.</p>` : ''}
+    <div class="row">
+      <button class="btn btn-line" id="ai-base" type="button" ${on && !AI.busy ? '' : 'disabled'}>1. ${AI.base ? 'Новый персонаж' : 'Нарисовать персонажа'}</button>
+      <button class="btn btn-main" id="ai-parts" type="button" ${on && !AI.busy && AI.base ? '' : 'disabled'}>2. Нарисовать детали</button>
+    </div></div>`;
+  ['style','bg','eyes','mouth','hat','recolor'].forEach(k => { const el = $('#ai-' + k); if(el) el.onchange = () => { aiCfg()[k] = el.value; save(); renderAI(); }; });
+  const b1 = $('#ai-base'), b2 = $('#ai-parts');
+  if(b1) b1.onclick = async () => { AI.busy = true; AI.log = []; AI.total = 0; renderAI(); try{ await aiMakeBase(); }catch(e){ AI.log.push(e.message); } AI.busy = false; renderAI(); };
+  if(b2) b2.onclick = async () => { AI.busy = true; AI.log = []; renderAI(); try{ await aiMakeParts(); genPreview(); save(); AI.busy = false; route(); toast('Детали готовы'); return; }catch(e){ AI.log.push(e.message); } AI.busy = false; renderAI(); };
+}
+async function bindAI(){ renderAI(); await aiStatus(); renderAI(); }
+
 function bindGen(){
+  bindAI();
   const G = S.gen, rerender = () => { genPreview(); save(); const y = scrollY; route(); scrollTo(0, y); };
   $$('[data-pal]').forEach(b => b.onclick = () => { G.pal = b.dataset.pal; G.seed = Math.floor(Math.random()*1e6); fillParts(true); rerender(); });
   $$('[data-gc]').forEach(el => el.onchange = () => { const k = el.dataset.gc, mx = GPARTS.find(x => x.k === k).max; G.counts[k] = Math.max(1, Math.min(mx, Math.floor(num(el.value)) || 1)); fillParts(false); rerender(); });
