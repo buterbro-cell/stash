@@ -504,7 +504,13 @@ const EN = {
   'Такой вариант уже есть':'That value already exists','Для этого признака нет готовых подсказок — впишите вариант сами':'No suggestions for this trait — type a value yourself','Впишите название признака':'Enter a trait name',
   'Добавьте варианты вручную: для этих признаков нет готовых подсказок':'Add values by hand: there are no suggestions for these traits','Все сочетания уже нарисованы. Добавьте варианты в признаки.':'All combinations are drawn already. Add values to the traits.',
   'Картинки ещё загружаются, подождите секунду':'Images are still loading, wait a second','NFT перенесены в конструктор':'NFTs sent to the builder',
-  'Волосы':'Hair','Студия слоёв':'Layer studio',
+  'Волосы':'Hair','Закрытая коробка':'Mystery box','Какая NFT выпадет, узнаете после минта: порядок перемешан заранее и скрыт.':'You’ll see which NFT you get after minting: the order was shuffled in advance and kept hidden.',
+  'Набор для маркетплейсов':'Marketplace kit','Это всё, что обычно просят площадки при листинге или верификации коллекции. По адресу контракта маркет сам прочитает все NFT, картинки и признаки.':'This is everything marketplaces usually ask for when listing or verifying a collection. From the contract address a marketplace reads all NFTs, images and traits itself.',
+  'Адрес контракта':'Contract address','Стандарт':'Standard','Количество':'Supply','Демо: адрес условный. Ссылки на картинки и метаданные в Arweave появятся после настоящего запуска, сейчас в файлах они пустые (null).':'Demo: the address is simulated. Arweave links to images and metadata appear after a real launch; for now they are empty (null) in the files.',
+  'Текст для заявки на листинг':'Text for the listing application','Скопировать текст':'Copy text','Скачать метаданные (JSON)':'Download metadata (JSON)','Скачать таблицу (CSV)':'Download table (CSV)',
+  'В файлах — каждая NFT: номер, название и признаки. Такой список обычно и просят площадки.':'The files list every NFT: number, title and traits — the kind of list marketplaces ask for.',
+  'Редкость признаков':'Trait rarity','Вариант':'Value','Сколько NFT':'NFTs','Доля':'Share','Текст скопирован':'Text copied','Выделено — нажмите Ctrl+C':'Selected — press Ctrl+C',
+  'Файл скачивается. Если ничего не произошло, скачивание доступно на развёрнутом сайте':'Downloading. If nothing happens, downloads work on the deployed site','Скачивание доступно на развёрнутом сайте':'Downloads work on the deployed site','Студия слоёв':'Layer studio',
   'Разложите любую картинку на слои прямо здесь: отделите фон, вырежьте части, перекрасьте их, добавьте детали от нейросети и отправьте всё в конструктор.':'Turn any picture into layers right here: remove the background, cut out parts, recolour them, add AI details and send it all to the builder.',
   '1. Картинка-основа':'1. Base picture','Выберите картинку, из которой сделаем слои: персонажа или NFT из AI-коллекции, либо загрузите свою. Лучше всего подходит рисунок на простом однотонном фоне.':'Pick the picture to make layers from: a character or NFT from the AI collection, or upload your own. Art on a plain single-colour background works best.',
   '+ Своя картинка':'+ Own image','2. Слои':'2. Layers','Сделать всё автоматически':'Do it all automatically','Редактор слоёв':'Layer editor','Инструмент':'Tool','Палочка':'Wand','Кисть':'Brush','Ластик':'Eraser','Двигать':'Move',
@@ -1230,8 +1236,10 @@ function vCollection(id){
       <p class="hint">Плюс чеканка ≈ ${fmt(MINT_COST)} NEAR — залог сети за хранение NFT, его платит покупатель.</p>
       <p class="err" id="mint-err"></p>`}
     </div>
-    <div class="b"><div class="art">${cv(c.id, next)}${keep ? '' : `<span class="num">#${next}${sold ? '' : ' следующая'}</span>`}</div></div>
+    <div class="b">${keep ? `<div class="art">${cv(c.id, 1)}</div>` : `<div class="art" style="display:grid;place-items:center;background:linear-gradient(135deg,var(--bg3),var(--bg2))">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center;padding:20px"><span style="font-size:64px;font-weight:800;color:var(--gold-text);line-height:1">?</span><b>Закрытая коробка</b><span class="hint">Какая NFT выпадет, узнаете после минта: порядок перемешан заранее и скрыт.</span></div></div>`}</div>
   </section>
+  ${kitHTML(c)}
   <section class="sec" style="margin-top:56px">
     <h2 class="d-m" style="margin-bottom:20px">Первые ${show} из ${fmt(c.supply,0)}</h2>
     <div class="g4">${Array.from({length:show}, (_, i) => mine
@@ -2296,14 +2304,85 @@ async function bindStudioTab(){ $('#st-wrap').innerHTML = '<p class="note">За�
   stRender(); }
 
 /* ---------- other bindings ---------- */
+/* ---------- marketplace kit: what to give other marketplaces ---------- */
+const contractId = c => c.contract || (c.contract = (c.symbol || 'col').toLowerCase().replace(/[^a-z0-9]/g, '') + '-' + String(hashSeed(c.id) % 100000) + '.stash.testnet');
+function tokenAttrs(c, i){
+  const a = [];
+  if(c.art.mode === 'layers' && c.dna){ const d = c.dna[i-1];
+    if(d && !Array.isArray(d)) a.push({trait_type:'Тип', value:'Легендарка 1 из 1'});
+    else if(d) c.art.layers.forEach((L, li) => { const v = L.variants[d[li]]; if(v) a.push({trait_type:L.name, value:v.label}); }); }
+  else if(c.art.mode === 'files'){ const f = (c.art.files || [])[i-1]; if(f && f.traits) f.traits.forEach(([k, v]) => a.push({trait_type:k, value:v})); }
+  else if(c.art.mode === 'algo') a.push({trait_type:'Стиль', value:c.art.algo.style});
+  if(c.fill && c.fill.on) a.push({trait_type:'Внутри', value:insideText(c)});
+  return a;
+}
+function kitTokens(c){ const n = Math.min(c.supply, 10000), out = [];
+  for(let i=1;i<=n;i++) out.push({token_id:String(i), title:`${c.name} #${i}`, description:`${c.name} — ${c.symbol}`, media:null, media_hash:null, reference:null, attributes:tokenAttrs(c, i)});
+  return out; }
+function kitRarity(c){ const t = kitTokens(c), map = new Map();
+  t.forEach(x => x.attributes.forEach(a => { if(a.trait_type === 'Внутри') return; const k = a.trait_type; if(!map.has(k)) map.set(k, new Map()); const m = map.get(k); m.set(a.value, (m.get(a.value) || 0) + 1); }));
+  return {total:t.length, map}; }
+function kitText(c){
+  return [`Collection: ${c.name} (${c.symbol})`, `Blockchain: NEAR`, `Contract: ${contractId(c)}`, `Standard: NEP-171 / NEP-177`, `Supply: ${c.supply}`, `Royalty: ${c.royalty}%`,
+    c.fill && c.fill.on ? `Tokens inside each NFT: ${insideText(c).replace(/ | /g, ' ')} (withdrawable by the owner, locked while listed)` : null,
+    `Creator: ${c.creator}`, `Media & metadata: Arweave (links in each token's media / reference)`].filter(Boolean).join('\n');
+}
+function kitHTML(c){
+  const r = kitRarity(c), rows = [...r.map.entries()];
+  return `<section class="sec" style="margin-top:40px">
+    <div class="box" style="gap:16px">
+      <div class="row" style="justify-content:space-between;align-items:center"><h2 class="d-m">Набор для маркетплейсов</h2><span class="tagp">NEP-171</span></div>
+      <p class="hint">Это всё, что обычно просят площадки при листинге или верификации коллекции. По адресу контракта маркет сам прочитает все NFT, картинки и признаки.</p>
+      <div class="stats">
+        <div class="stat"><span>Адрес контракта</span><b class="mono" style="font-size:14px;word-break:break-all">${esc(contractId(c))}</b></div>
+        <div class="stat"><span>Стандарт</span><b>NEP-171 / 177</b></div>
+        <div class="stat"><span>Количество</span><b>${fmt(c.supply,0)}</b></div>
+        <div class="stat"><span>Роялти</span><b>${fmt(c.royalty)}%</b></div>
+      </div>
+      <p class="note">Демо: адрес условный. Ссылки на картинки и метаданные в Arweave появятся после настоящего запуска, сейчас в файлах они пустые (null).</p>
+      <div class="field"><label for="kit-text">Текст для заявки на листинг</label><textarea class="input mono" id="kit-text" rows="7" readonly style="font-size:13px;resize:vertical">${esc(kitText(c))}</textarea></div>
+      <div class="row">
+        <button class="btn btn-main btn-sm" type="button" id="kit-copy">Скопировать текст</button>
+        <button class="btn btn-line btn-sm" type="button" id="kit-json">Скачать метаданные (JSON)</button>
+        <button class="btn btn-line btn-sm" type="button" id="kit-csv">Скачать таблицу (CSV)</button>
+      </div>
+      <p class="hint">В файлах — каждая NFT: номер, название и признаки. Такой список обычно и просят площадки.</p>
+      ${rows.length ? `<details><summary class="btn btn-line btn-sm" style="display:inline-flex">Редкость признаков</summary><div class="tw" style="margin-top:10px"><table class="cmp"><tr><th>Признак</th><th>Вариант</th><th>Сколько NFT</th><th>Доля</th></tr>
+        ${rows.map(([k, m]) => [...m.entries()].sort((a, b) => a[1] - b[1]).map(([v, n]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td><td class="mono">${fmt(n,0)}</td><td class="mono">${fmt(n / r.total * 100, 1)}%</td></tr>`).join('')).join('')}</table></div></details>` : ''}
+    </div>
+  </section>`;
+}
+function kitDownload(name, text, type){
+  try{ const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], {type})); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); toast('Файл скачивается. Если ничего не произошло, скачивание доступно на развёрнутом сайте'); }
+  catch(e){ toast('Скачивание доступно на развёрнутом сайте'); }
+}
+function bindKit(id){
+  const c = col(id); if(!c) return;
+  const cp = $('#kit-copy'); if(cp) cp.onclick = async () => { const t = $('#kit-text'); try{ await navigator.clipboard.writeText(t.value); toast('Текст скопирован'); }catch(e){ t.select(); toast('Выделено — нажмите Ctrl+C'); } };
+  const slug = (c.symbol || 'collection').toLowerCase();
+  const js = $('#kit-json'); if(js) js.onclick = () => kitDownload(slug + '-metadata.json', JSON.stringify({collection:{name:c.name, symbol:c.symbol, contract:contractId(c), standard:'NEP-171', supply:c.supply, royalty_percent:c.royalty, creator:c.creator}, tokens:kitTokens(c)}, null, 2), 'application/json');
+  const cs = $('#kit-csv'); if(cs) cs.onclick = () => { const t = kitTokens(c), keys = [...new Set(t.flatMap(x => x.attributes.map(a => a.trait_type)))], q = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    kitDownload(slug + '-tokens.csv', [['token_id', 'title', ...keys].map(q).join(','), ...t.map(x => [x.token_id, x.title, ...keys.map(k => (x.attributes.find(a => a.trait_type === k) || {}).value)].map(q).join(','))].join('\n'), 'text/csv'); };
+}
+// Secret shuffled mint order (in the contract: a committed hash of this order, revealed after the sale)
+function mintOrder(c){
+  if(!c.order || c.order.length !== c.supply){ const r = rng(hashSeed(c.id)), a = Array.from({length:c.supply}, (_, i) => i + 1);
+    for(let i=a.length-1;i>0;i--){ const j = Math.floor(r()*(i+1)); [a[i], a[j]] = [a[j], a[i]]; }
+    // already minted numbers (from before random order) stay at the front
+    c.order = a; }
+  return c.order;
+}
+function hashSeed(str){ let h = 2166136261; for(const ch of String(str)){ h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
 function bindCollection(id){
+  bindKit(id);
   const b = $('#mint'); if(!b) return;
   b.onclick = () => {
     const c = col(id); if(!S.wallet) connect(); if(c.minted >= c.supply) return;
     const cost = r2(c.price + MINT_COST);
     if(S.near < cost){ $('#mint-err').textContent = `Не хватает NEAR: нужно ${fmt(cost)}, на балансе ${fmt(S.near)}.`; return; }
-    S.near = r2(S.near - cost); c.minted++;
-    const n = {id:uid(), col:c.id, n:c.minted, near:fillNear(c), tok:c.fill && c.fill.on && c.fill.tokOn ? c.fill.tokPer : 0, listed:false, listPrice:null};
+    S.near = r2(S.near - cost);
+    const num = mintOrder(c)[c.minted]; c.minted++;
+    const n = {id:uid(), col:c.id, n:num, near:fillNear(c), tok:c.fill && c.fill.on && c.fill.tokOn ? c.fill.tokPer : 0, listed:false, listPrice:null};
     S.owned.unshift(n); save(); renderWallet(); toast(`Сминчено: ${c.name} #${n.n}`); location.hash = 'nft-' + n.id;
   };
 }

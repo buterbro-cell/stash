@@ -12,6 +12,8 @@ Stash is a no-code platform for launching **tokenized NFT collections** on NEAR:
 - **Collection builder** — from layers (with rarity, manual edits of any NFT and 1-of-1 legendaries), from your own finished images, or algorithmic styles. Any size from 1 to 10,000; the builder suggests how many variants each layer needs.
 - **Animation** — per-layer motion (float, sway, pulse, spin, blink, shimmer).
 - **Tokens inside NFTs** — part of the mint price and/or your own token goes into every NFT. Withdrawals are locked while an NFT is listed for sale, so buyers get exactly what they see.
+- **Marketplace kit** — on every collection page: contract address, standard, supply, royalty, a ready-to-paste listing text, downloadable metadata (JSON, NEP-177-style with attributes) and a CSV of every token with its traits, plus a trait rarity table.
+- **Fair mint** — tokens are minted in a secretly shuffled order and shown as a mystery box until minted (the contract will commit to the order's hash and reveal it after the sale).
 - **Release options** — sell on Stash (buyers pay the minting deposit) or mint the whole collection to your wallet and take it to any NEAR marketplace (NEP-171).
 - **English / Russian** interface (English by default).
 
