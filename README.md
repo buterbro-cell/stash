@@ -41,7 +41,7 @@ A full set of parts (base + ~15 details) is roughly 16 images, about $0.6 at ~$0
 ### Deploy
 
 - **Buildpack hosts** (Northflank buildpack, Heroku-style): `npm start` runs `server.js`, a zero-dependency server on `$PORT` (default 8080).
-- **Docker** (Northflank Dockerfile build, Fly.io, etc.): the `Dockerfile` serves it with nginx on port **8080**.
+- **Docker** (Northflank Dockerfile build, Fly.io, etc.): the `Dockerfile` runs `server.js` on port **8080** (static page + AI proxy).
 - **GitHub Pages / Vercel / Netlify**: no build step, publish the repository root.
 
 ## Roadmap

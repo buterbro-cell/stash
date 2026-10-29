@@ -1,5 +1,8 @@
-# Static site served by nginx on port 8080
-FROM nginx:1.27-alpine
-COPY index.html /usr/share/nginx/html/index.html
-RUN sed -i 's/listen\s*80;/listen 8080;/; s/listen\s*\[::\]:80;/listen [::]:8080;/' /etc/nginx/conf.d/default.conf
+# Runs server.js: serves the page and proxies AI generation (key from OPENROUTER_API_KEY)
+FROM node:20-alpine
+WORKDIR /app
+COPY package.json server.js index.html ./
+ENV PORT=8080 NODE_ENV=production
 EXPOSE 8080
+USER node
+CMD ["node", "server.js"]
