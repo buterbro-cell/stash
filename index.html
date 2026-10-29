@@ -504,7 +504,13 @@ const EN = {
   'Такой вариант уже есть':'That value already exists','Для этого признака нет готовых подсказок — впишите вариант сами':'No suggestions for this trait — type a value yourself','Впишите название признака':'Enter a trait name',
   'Добавьте варианты вручную: для этих признаков нет готовых подсказок':'Add values by hand: there are no suggestions for these traits','Все сочетания уже нарисованы. Добавьте варианты в признаки.':'All combinations are drawn already. Add values to the traits.',
   'Картинки ещё загружаются, подождите секунду':'Images are still loading, wait a second','NFT перенесены в конструктор':'NFTs sent to the builder',
-  'Волосы':'Hair','Отделить фон заново с AI':'Remove background again with AI','Начать слои заново':'Start layers over','Слои сброшены, основа осталась':'Layers cleared, the base picture stays','Убираю фон…':'Removing the background…','Сохраняю исходный фон отдельно…':'Saving the original background separately…',
+  'Волосы':'Hair','Сборка NFT':'Assembling NFTs','Здесь появятся собранные NFT.':'Assembled NFTs will appear here.','Как собирать':'How to assemble','Собирать вручную':'Assemble by hand','Случайно, всю коллекцию сразу':'Randomly, the whole collection at once',
+  'Собранные NFT. Нажмите на любую, чтобы поменять.':'Assembled NFTs. Tap any to change it.','Дособрать случайно:':'Add random ones:','Сколько дособрать':'How many to add','Очистить собранные':'Clear assembled',
+  'NFT добавлена':'NFT added','Максимум 10 000 NFT.':'10,000 NFTs maximum.','Новых сочетаний не осталось — добавьте варианты в слои':'No new combinations left — add variants to the layers','Равно числу собранных NFT':'Equals the number of assembled NFTs',
+  'Соберите хотя бы одну NFT: выберите варианты слоёв и нажмите «Добавить NFT в коллекцию».':'Assemble at least one NFT: pick layer variants and press “Add NFT to the collection”.',
+  'Слои перенесены. Соберите NFT по одной или дособерите случайно':'Layers sent. Assemble NFTs one by one or add random ones','Найти с AI':'Find with AI','Готово. Поправьте края кистью или ластиком, если нужно':'Done. Touch up the edges with the brush or eraser if needed',
+  '— впишите «Волосы» (или «Майка», «Глаза», «Тату») и нажмите «+ Часть (вырезать)»: нейросеть сама найдёт эту часть. Без AI — нажмите на неё палочкой. Потом «Авто: 5 цветов».':'— type “Hair” (or “Top”, “Eyes”, “Tattoo”) and press “+ Part (cut out)”: the AI finds that part itself. Without AI, tap it with the wand. Then “Auto: 5 colours”.',
+  'нет картинки-основы':'no base picture','Отделить фон заново с AI':'Remove background again with AI','Начать слои заново':'Start layers over','Слои сброшены, основа осталась':'Layers cleared, the base picture stays','Убираю фон…':'Removing the background…','Сохраняю исходный фон отдельно…':'Saving the original background separately…',
   'Нейросеть не убрала фон. Попробуйте ещё раз или выделите фон палочкой вручную.':'The AI didn’t remove the background. Try again or select the background with the wand by hand.','Исходный фон':'Original background',
   'Отделить фон с помощью AI':'Remove background with AI','Работает на любой картинке: нейросеть убирает фон, а исходный фон сохраняет отдельным вариантом. 2 картинки, ≈ $0,08.':'Works on any picture: the AI removes the background and keeps the original background as a separate variant. 2 images, ≈ $0.08.',
   'Отделить простой фон (без AI)':'Remove a plain background (no AI)','Бесплатно, но только для однотонного фона, как у персонажей.':'Free, but only for a plain single-colour background, like the characters have.',
@@ -564,6 +570,11 @@ const RX = [
   [/^Добавлено вариантов: (\d+)$/, a => `Values added: ${a}`],
   [/^Готовые и AI-картинки · (\d+)$/, a => `Finished & AI images · ${a}`],
   [/^Ваши (\d+) картинок \(в том числе из AI-генератора\) — во вкладке «Готовые и AI-картинки»\.$/, a => `Your ${a} images (including from the AI generator) are in the “Finished & AI images” tab.`],
+  [/^Добавить NFT #(\d+) в коллекцию$/, a => `Add NFT #${a} to the collection`],
+  [/^Такая NFT уже есть — №(\d+)\. Поменяйте что-нибудь\.$/, a => `That NFT already exists — #${a}. Change something.`],
+  [/^Добавлено NFT: (\d+)$/, a => `NFTs added: ${a}`],
+  [/^Ищу «(.+)» на картинке…$/, a => `Looking for “${T(a)}” in the picture…`],
+  [/^Не получилось: нейросеть не нашла «(.+)» на картинке(\. Нажмите на часть палочкой вручную\.)?$/, (a, b) => `Didn’t work: the AI didn’t find “${T(a)}” in the picture${b ? '. Tap the part with the wand by hand.' : ''}`],
   [/^Рисую детали… (\d+) из (\d+)$/, (a, b) => `Drawing details… ${a} of ${b}`],
   [/^Взять (.+) за основу$/, a => `Use ${T(a)} as the base`],
   [/^Не получилось: (.+)$/, a => `Didn’t work: ${T(a)}`],
@@ -963,10 +974,15 @@ let editIdx = null;
 /* ---------- draft helpers ---------- */
 function draftArt(){ const d = S.draft; return {mode:d.mode, layers:d.layers, algo:d.algo, files:d.files, anim:d.fileAnim, legends:d.legends}; }
 function draftAll(){ const d = S.draft; return (d.dna || []).concat(d.legends.map((_, i) => ({l:i}))); }
-function draftSupply(){ const d = S.draft; return d.mode === 'files' ? d.files.length : (Math.floor(num(d.supply)) || 0); }
+const isManual = () => S.draft.mode === 'layers' && S.draft.assembly === 'manual';
+function draftSupply(){ const d = S.draft; return d.mode === 'files' ? d.files.length : isManual() ? (d.dna || []).length + d.legends.length : (Math.floor(num(d.supply)) || 0); }
+function wipFix(){ const d = S.draft; d.wip = d.layers.map((L, i) => { const v = (d.wip || [])[i]; return Number.isInteger(v) && v >= 0 && v < L.variants.length ? v : 0; }); }
 function rebuildDNA(){
   const d = S.draft;
   if(d.mode !== 'layers'){ d.dna = null; return; }
+  if(isManual()){ // keep hand-assembled NFTs: fit them to the current layers and drop duplicates
+    const seen = new Set(); d.dna = (d.dna || []).filter(Array.isArray).map(x => d.layers.map((L, i) => { const v = x[i]; return Number.isInteger(v) && v < L.variants.length ? v : 0; }))
+      .filter(x => { const k = x.join('.'); if(seen.has(k)) return false; seen.add(k); return true; }); wipFix(); editIdx = null; return; }
   const n = Math.max(0, Math.min(10000, draftSupply()) - d.legends.length);
   const had = d.edits; d.dna = genDNA(d.layers, Math.min(n, combos(d.layers)), d.seed); d.edits = 0; editIdx = null;
   if(had) toast('Сборка обновлена, ручные правки сброшены');
@@ -988,6 +1004,7 @@ function resolve(c){
   }
   if(k === 'gthumb'){ const L = genLayers(), li = +c.dataset.l, vi = +c.dataset.v; const dna = L.map((x, j) => j === li ? vi : (x.variants.length ? (x.name === 'Головной убор' ? 0 : 0) : -1)); return {art:{mode:'layers', layers:L}, dna, idx:li*10+vi}; }
   if(k === 'gprev'){ return {art:{mode:'layers', layers:genLayers()}, dna:genPrevDNA[i] || [], idx:i+1}; }
+  if(k === 'wip' || k === 'wipv'){ const d = S.draft; wipFix(); const dna = d.wip.slice(); if(k === 'wipv') dna[+c.dataset.l] = +c.dataset.v; return {art:{mode:'layers', layers:d.layers}, dna, idx:7}; }
   if(k === 'thumb'){ const d = S.draft, li = +c.dataset.l, vi = +c.dataset.v; const dna = d.layers.map((L, j) => j === li ? vi : (L.variants.length ? 0 : -1)); return {art:{mode:'layers', layers:d.layers}, dna, idx:li*10+vi}; }
   if(k === 'file'){ const d = S.draft; return {art:{mode:'files', files:d.files, anim:d.fileAnim}, dna:[], idx:i+1}; }
   if(k === 'leg'){ const d = S.draft; return {art:{mode:'layers', layers:d.layers, legends:d.legends}, dna:{l:i}, idx:i+1}; }
@@ -1371,8 +1388,10 @@ function vCreate(){
           </div>
         </div>
 
-        <div class="step" id="step-review" ${d.mode==='layers' ? '' : 'hidden'}><div class="step-h"><span class="n"></span><h2 class="d-m">Проверка и ручная правка</h2></div>
-          <p class="hint">Это вся собранная коллекция. Нажмите на любую NFT, чтобы поменять её вручную.</p>
+        <div class="step" id="step-review" ${d.mode==='layers' ? '' : 'hidden'}><div class="step-h"><span class="n"></span><h2 class="d-m">Сборка NFT</h2></div>
+          <div class="seg" role="group" aria-label="Как собирать"><button type="button" data-asm="manual" aria-pressed="${d.assembly === 'manual'}">Собирать вручную</button><button type="button" data-asm="random" aria-pressed="${d.assembly !== 'manual'}">Случайно, всю коллекцию сразу</button></div>
+          <div id="assembler"></div>
+          <p class="hint" id="gal-hint">${d.assembly === 'manual' ? 'Собранные NFT. Нажмите на любую, чтобы поменять.' : 'Это вся собранная коллекция. Нажмите на любую NFT, чтобы поменять её вручную.'}</p>
           <div id="gallery"></div>
           <div id="editor"></div>
           <div class="field"><span class="lbl">Легендарки 1 из 1 — нарисованы целиком вами, входят в общее количество</span>
@@ -1442,8 +1461,8 @@ function renderGallery(){
   d.galPage = Math.min(d.galPage, pages - 1);
   const from = d.galPage*PER, list = all.slice(from, from + PER);
   box.innerHTML = all.length ? `<div class="gs">${list.map((x, j) => { const i = from + j; return `<button class="tile" type="button" data-gi="${i}" aria-pressed="${editIdx === i}" aria-label="NFT ${i+1}"><div class="art">${cv('gal', i)}<span class="num">${Array.isArray(x) ? '#' + (i+1) : '1/1'}</span></div></button>`; }).join('')}</div>
-    <div class="pager" style="margin-top:10px"><button class="btn btn-line btn-sm" type="button" id="pg-prev" ${d.galPage === 0 ? 'disabled' : ''} aria-label="Назад">${IC.back}</button><span class="mono">${d.galPage+1} / ${pages}</span><button class="btn btn-line btn-sm" type="button" id="pg-next" ${d.galPage >= pages-1 ? 'disabled' : ''} aria-label="Вперёд">${IC.arrow}</button><span class="hint">${fmt(all.length,0)} NFT${d.edits ? ' · правок вручную: ' + d.edits : ''}</span></div>`
-    : `<p class="note">Пока нечего показать: добавьте картинки в слои.</p>`;
+    <div class="pager" style="margin-top:10px"><button class="btn btn-line btn-sm" type="button" id="pg-prev" ${d.galPage === 0 ? 'disabled' : ''} aria-label="Назад">${IC.back}</button><span class="mono">${d.galPage+1} / ${pages}</span><button class="btn btn-line btn-sm" type="button" id="pg-next" ${d.galPage >= pages-1 ? 'disabled' : ''} aria-label="Вперёд">${IC.arrow}</button><span class="hint">${fmt(all.length,0)} NFT${d.edits && !isManual() ? ' · правок вручную: ' + d.edits : ''}</span></div>`
+    : `<p class="note">${isManual() ? 'Здесь появятся собранные NFT.' : 'Пока нечего показать: добавьте картинки в слои.'}</p>`;
   $$('[data-gi]').forEach(b => b.onclick = () => { editIdx = +b.dataset.gi; renderGallery(); renderEditor(); });
   const p = $('#pg-prev'), nx = $('#pg-next');
   if(p) p.onclick = () => { d.galPage--; renderGallery(); };
@@ -1478,6 +1497,32 @@ function renderEditor(){
   $('#ed-close').onclick = () => { editIdx = null; renderGallery(); renderEditor(); };
   collect();
 }
+function renderAssembler(){
+  const d = S.draft, box = $('#assembler'); if(!box) return;
+  if(!isManual()){ box.innerHTML = ''; return; }
+  wipFix(); const k = d.dna.length + 1;
+  box.innerHTML = `<div class="editor" style="border-color:var(--gold2)">
+    <div class="ea" style="flex-basis:240px;position:sticky;top:84px;align-self:flex-start"><div class="art">${cv('wip', 0)}<span class="num">#${k}</span></div>
+      <div class="row" style="margin-top:10px"><button class="btn btn-line btn-sm" type="button" id="asm-rand">${IC.shuffle} Случайно</button></div></div>
+    <div class="eb"><h3 class="d-m">NFT #${k}</h3>
+      ${d.layers.map((L, li) => `<div class="field"><span class="lbl">${esc(L.name)}</span><div class="gs" style="grid-template-columns:repeat(auto-fill,minmax(64px,1fr))">${L.variants.map((v, vi) => `<button class="tile" type="button" data-wip="${li}-${vi}" aria-pressed="${d.wip[li] === vi}" aria-label="${esc(L.name)}: ${esc(v.label)}" title="${esc(v.label)}"><div class="art">${cv('wipv', 0, `data-l="${li}" data-v="${vi}"`)}</div></button>`).join('')}</div></div>`).join('')}
+      <p class="err" id="asm-err"></p>
+      <div class="row"><button class="btn btn-main" type="button" id="asm-add">Добавить NFT #${k} в коллекцию</button></div>
+      <div class="inline" style="align-items:center"><span class="hint">Дособрать случайно:</span><input class="input sm mono" id="asm-n" inputmode="numeric" value="10" style="width:84px;flex:none" aria-label="Сколько дособрать"><button class="btn btn-line btn-sm" type="button" id="asm-fill">Добавить</button>${d.dna.length ? `<button class="btn btn-line btn-sm" type="button" id="asm-clear">Очистить собранные</button>` : ''}</div>
+    </div></div>`;
+  $$('[data-wip]').forEach(b => b.onclick = () => { const [li, vi] = b.dataset.wip.split('-').map(Number); d.wip[li] = vi; save(); renderAssembler(); });
+  $('#asm-rand').onclick = () => { const r = rng(Math.floor(Math.random()*1e9)); d.wip = d.layers.map(L => pick(r, L.variants)); save(); renderAssembler(); };
+  $('#asm-add').onclick = () => { const key = d.wip.join('.'), clash = d.dna.findIndex(o => o.join('.') === key);
+    if(clash >= 0){ $('#asm-err').textContent = `Такая NFT уже есть — №${clash+1}. Поменяйте что-нибудь.`; return; }
+    if(draftSupply() >= 10000){ $('#asm-err').textContent = 'Максимум 10 000 NFT.'; return; }
+    d.dna.push(d.wip.slice()); d.edits++; const r = rng(Math.floor(Math.random()*1e9)); d.wip = d.layers.map(L => pick(r, L.variants)); save(); toast('NFT добавлена'); afterAsm(); };
+  $('#asm-fill').onclick = () => { const want = Math.max(1, Math.min(5000, Math.floor(num($('#asm-n').value)) || 1)), seen = new Set(d.dna.map(o => o.join('.'))), r = rng(Math.floor(Math.random()*1e9)); let added = 0;
+    for(let t=0; added < want && t < want*60 && draftSupply() < 10000; t++){ const nd = d.layers.map(L => pick(r, L.variants)), key = nd.join('.'); if(!seen.has(key)){ seen.add(key); d.dna.push(nd); added++; } }
+    save(); toast(added ? `Добавлено NFT: ${added}` : 'Новых сочетаний не осталось — добавьте варианты в слои'); afterAsm(); };
+  const cl = $('#asm-clear'); if(cl) cl.onclick = () => { d.dna = []; editIdx = null; save(); afterAsm(); };
+  collect();
+}
+function afterAsm(){ renderAssembler(); renderGallery(); renderEditor(); updateSide(); const sup = $('#f-sup'); if(sup && isManual()) sup.value = draftSupply(); }
 function renderLegends(){
   const d = S.draft, box = $('#legends'); if(!box) return;
   box.innerHTML = d.legends.map((g, i) => `<div class="var"><div class="art">${cv('leg', i)}<button class="x" type="button" data-legdel="${i}" aria-label="Удалить легендарку">${IC.x}</button></div><span class="vn">${esc(g.label)}</span></div>`).join('')
@@ -1559,8 +1604,11 @@ function updateSide(){
   $('#step-review').hidden = d.mode !== 'layers';
   $$('[data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === d.mode)));
   $$('[data-algo]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.algo === d.algo.style)));
-  const sup = $('#f-sup'); sup.disabled = d.mode === 'files'; if(d.mode === 'files') sup.value = d.files.length;
-  $('#sup-hint').textContent = d.mode === 'files' ? 'Равно числу загруженных картинок' : 'От 1 до 10 000';
+  const sup = $('#f-sup'); sup.disabled = d.mode === 'files' || isManual(); if(d.mode === 'files') sup.value = d.files.length; else if(isManual()) sup.value = draftSupply();
+  $('#sup-hint').textContent = d.mode === 'files' ? 'Равно числу загруженных картинок' : isManual() ? 'Равно числу собранных NFT' : 'От 1 до 10 000';
+  const rb = $('#rebuild'); if(rb) rb.hidden = isManual();
+  $$('[data-asm]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.asm === (d.assembly === 'manual' ? 'manual' : 'random'))));
+  const gh = $('#gal-hint'); if(gh) gh.textContent = isManual() ? 'Собранные NFT. Нажмите на любую, чтобы поменять.' : 'Это вся собранная коллекция. Нажмите на любую NFT, чтобы поменять её вручную.';
   $('#price-field label').textContent = keep ? 'Цена минта, NEAR (для расчёта наполнения)' : 'Цена минта, NEAR';
   if(d.mode === 'layers') $('#advice').innerHTML = adviceHTML();
   const tokPer = Math.floor(num(d.fill.tokPer)) || 0, tsym = d.fill.tokSym || 'токенов';
@@ -1582,7 +1630,7 @@ function updateSide(){
 
 function readBasics(){
   const d = S.draft;
-  d.name = $('#f-name').value; d.symbol = $('#f-sym').value.toUpperCase().trim(); if(d.mode !== 'files') d.supply = $('#f-sup').value; d.price = $('#f-pr').value;
+  d.name = $('#f-name').value; d.symbol = $('#f-sym').value.toUpperCase().trim(); if(d.mode !== 'files' && !isManual()) d.supply = $('#f-sup').value; d.price = $('#f-pr').value;
   d.royalty = +$('#f-roy').value; d.fill.on = $('#f-fill').checked; d.fill.pct = +$('#f-pct').value; d.fill.tokOn = $('#f-tok').checked;
   d.fill.tokAddr = $('#f-ta').value.trim(); d.fill.tokSym = $('#f-ts').value.toUpperCase().trim(); d.fill.tokPer = $('#f-tp').value;
   d.algo.c1 = $('#f-c1').value; d.algo.c2 = $('#f-c2').value; d.fileAnim = $('#f-fanim').value;
@@ -1603,7 +1651,7 @@ function bindLayers(){
 }
 function afterDraft(rebuild){
   if(rebuild) rebuildDNA();
-  renderLayers(); renderGallery(); renderEditor(); renderLegends(); renderFiles(); updateSide(); save();
+  renderLayers(); renderAssembler(); renderGallery(); renderEditor(); renderLegends(); renderFiles(); updateSide(); save();
 }
 
 function validate(){
@@ -1611,6 +1659,7 @@ function validate(){
   if(!d.name.trim()) e.push('Укажите название коллекции.');
   if(!/^[A-Z0-9]{2,8}$/.test(d.symbol)) e.push('Тикер: от 2 до 8 латинских букв или цифр.');
   if(d.mode === 'files'){ if(!d.files.length) e.push('Загрузите хотя бы одну картинку.'); }
+  else if(isManual()){ if(sup < 1) e.push('Соберите хотя бы одну NFT: выберите варианты слоёв и нажмите «Добавить NFT в коллекцию».'); }
   else if(!(Number.isInteger(num(d.supply)) && sup >= 1 && sup <= 10000)) e.push('Количество: целое число от 1 до 10 000.');
   if(!(pr >= 0)) e.push('Укажите цену минта (0 — бесплатно).');
   if(d.fill.on && !(pr > 0)) e.push('Для наполнения укажите цену минта больше нуля: от неё считается сумма внутри.');
@@ -1628,6 +1677,7 @@ function validate(){
 }
 
 function bindCreate(){
+  if(S.draft.scrollTo){ const id = S.draft.scrollTo; S.draft.scrollTo = null; setTimeout(() => { const el = document.getElementById(id); if(el) el.scrollIntoView({behavior:'smooth', block:'start'}); }, 120); }
   if(S.draft.mode === 'layers' && (!S.draft.dna || S.draft.dna.length + S.draft.legends.length !== Math.min(draftSupply(), combos(S.draft.layers) + S.draft.legends.length))) rebuildDNA();
   afterDraft(false);
   const f = $('#cf');
@@ -1640,6 +1690,8 @@ function bindCreate(){
   $$('[data-algo]').forEach(b => b.onclick = () => { S.draft.algo.style = b.dataset.algo; updateSide(); save(); });
   $('#add-layer').onclick = () => { S.draft.layers.push({id:uid(), name:'Слой ' + (S.draft.layers.length + 1), anim:'none', variants:[]}); afterDraft(true); };
   $('#reset-layers').onclick = () => { S.draft.layers = exampleLayers(); afterDraft(true); toast('Пример слоёв возвращён'); };
+  $$('[data-asm]').forEach(b => b.onclick = () => { const d = S.draft, to = b.dataset.asm; if((d.assembly === 'manual') === (to === 'manual')) return;
+    d.assembly = to; if(to === 'manual'){ d.dna = []; wipFix(); } else { d.supply = Math.max(1, (d.dna || []).length || 333); } editIdx = null; afterDraft(true); });
   $('#rebuild').onclick = () => { S.draft.seed = Math.floor(Math.random()*1e6); afterDraft(true); toast('Коллекция пересобрана'); };
   $('#shuffle').onclick = () => { S.draft.previewOff = Math.floor(Math.random()*10000); save(); };
   $('#launch').onclick = launch;
@@ -2177,6 +2229,26 @@ async function stAICut(){
   ['#F3D9C9','#CFEBEA','#DCE2F2','#F1E5B9'].forEach((col, i) => B.variants.push({id:'v' + uid(), kind:'fill', label:'Цвет ' + (i + 1), c1:col, c2:mixc(col, '#FFFFFF', .35), w:10}));
   B.cur = 0; c.layers = [B, F]; c.sel = {li:1, vi:0}; await stSaveMask(B); await stSaveMask(F); stDirty(); ST.busy = false; save();
 }
+/* --- AI segmentation: the model paints the part magenta, we use that only as a hint and cut along the real picture --- */
+const PART_EN = [[/волос|причёск|прическ/i,'hair'],[/одежд|майк|топ|футбол|кофт|куртк|плать|купальн/i,'clothes'],[/глаз/i,'eyes (irises)'],[/губ|рот/i,'lips'],[/кож/i,'skin'],[/тату/i,'tattoo'],[/очк/i,'glasses'],[/шапк|кепк|головн/i,'headwear'],[/украш|серьг|цеп/i,'jewelry']];
+const partEn = name => { const m = PART_EN.find(([re]) => re.test(name)); return m ? m[1] : name; };
+function morph(m, r, grow){ let a = m; for(let it=0; it<r; it++){ const o = new Uint8Array(SS*SS); for(let y=1;y<SS-1;y++) for(let x=1;x<SS-1;x++){ const k = y*SS + x, n = a[k-1] + a[k+1] + a[k-SS] + a[k+SS]; o[k] = grow ? (a[k] || n > 0 ? 1 : 0) : (a[k] && n === 4 ? 1 : 0); } a = o; } return a; }
+async function stAISegment(L){
+  const src = await IDB.get('st:src'); if(!src || !STSRC) throw new Error('нет картинки-основы');
+  const part = partEn(L.name);
+  const img = await aiImage(`Edit this image: paint ONLY the character's ${part} in perfectly flat solid magenta (#FF00FF) with no shading and no outline changes. Keep everything else exactly the same: same pose, framing, size and colours. Do not add anything.`, [src]);
+  const im = await loadImg(img), cv = canvas512(), x = cv.getContext('2d'); x.drawImage(im, 0, 0, SS, SS); const e = x.getImageData(0, 0, SS, SS).data;
+  const hint = new Uint8Array(SS*SS); let n = 0;
+  for(let k=0;k<hint.length;k++){ const i = k*4; if(e[i] > 190 && e[i+2] > 190 && e[i+1] < 100){ hint[k] = 1; n++; } }
+  if(n < SS*SS*.001) throw new Error('нейросеть не нашла «' + L.name + '» на картинке');
+  const area = morph(hint, 10, true), core = morph(hint, 3, false), s = STSRC.data, mask = new Uint8Array(SS*SS), tol = stCfg().tol;
+  const isBg = k => { const i = k*4; return s[i+1] - Math.max(s[i], s[i+2]) > 60 && s[i+1] > 110; };
+  for(let k=0;k<core.length;k+=5){ if(!core[k] || mask[k] || isBg(k)) continue;
+    const i0 = k*4, r0 = s[i0], g0 = s[i0+1], b0 = s[i0+2], t2 = tol*tol*3, st = [k];
+    while(st.length){ const q = st.pop(); if(mask[q] || !area[q] || isBg(q)) continue; const i = q*4, dr = s[i]-r0, dg = s[i+1]-g0, db = s[i+2]-b0; if(dr*dr + dg*dg + db*db > t2) continue;
+      mask[q] = 1; const X = q % SS; if(X > 0) st.push(q-1); if(X < SS-1) st.push(q+1); if(q >= SS) st.push(q-SS); if(q < SS*(SS-1)) st.push(q+SS); } }
+  STM.set(L.id, mask); stDirty(L); await stSaveMask(L);
+}
 /* --- UI --- */
 const TOOLS = [['wand','Палочка'],['brush','Кисть'],['erase','Ластик'],['move','Двигать']];
 function vStudio(){
@@ -2196,7 +2268,7 @@ function vStudio(){
         <ol style="margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:14px">
           <li><b style="color:var(--fg)">Отделите фон</b> — кнопкой справа. Появятся слои «Фон» и «Тело».</li>
           <li><b style="color:var(--fg)">Фоны</b> — выберите слой «Фон», в поле AI уже подставлены ваши фоны из признаков, нажмите AI. Или «+ Цвет фона».</li>
-          <li><b style="color:var(--fg)">Части для перекраски</b> — впишите «Волосы», нажмите «+ Часть (вырезать)», затем палочкой нажмите на волосы на картинке. Потом «Авто: 5 цветов».</li>
+          <li><b style="color:var(--fg)">Части для перекраски</b> — впишите «Волосы» (или «Майка», «Глаза», «Тату») и нажмите «+ Часть (вырезать)»: нейросеть сама найдёт эту часть. Без AI — нажмите на неё палочкой. Потом «Авто: 5 цветов».</li>
           <li><b style="color:var(--fg)">Детали</b> — «+ Слой деталей», в поле AI уже ваши аксессуары, нажмите AI. Детали двигаются мышкой.</li>
           <li><b style="color:var(--fg)">Готово</b> — справа «Перенести слои в конструктор».</li>
         </ol></details>
@@ -2238,7 +2310,7 @@ function stLayerTools(L){
   if(V && V.kind === 'fill') h += `<div class="fields"><div class="field"><label for="st-c1">Цвет 1</label><input id="st-c1" type="color" value="${V.c1}"></div><div class="field"><label for="st-c2">Цвет 2</label><input id="st-c2" type="color" value="${V.c2 || V.c1}"></div></div>`;
   if(V) h += `<div class="field" style="max-width:200px"><label for="st-w">Редкость варианта</label><select class="input sm" id="st-w">${RARITY.map(([w, l]) => `<option value="${w}" ${rarityKey(V.w || 10) === w ? 'selected' : ''}>${l}</option>`).join('')}</select></div>`;
   h += '<div class="row">';
-  if(L.type === 'cut') h += `<button class="btn btn-sm btn-line" type="button" id="st-addcol">+ Цвет</button><button class="btn btn-sm btn-line" type="button" id="st-auto5">Авто: 5 цветов</button>`;
+  if(L.type === 'cut') h += `${!L.base && on ? `<button class="btn btn-sm btn-line" type="button" id="st-seg" ${ST.busy ? 'disabled' : ''}>${IC.spark} Найти с AI</button>` : ''}<button class="btn btn-sm btn-line" type="button" id="st-addcol">+ Цвет</button><button class="btn btn-sm btn-line" type="button" id="st-auto5">Авто: 5 цветов</button>`;
   if(L.type === 'bg') h += `<button class="btn btn-sm btn-line" type="button" id="st-addfill">+ Цвет фона</button>`;
   if(L.type === 'detail') h += `<label class="btn btn-sm btn-line" for="st-png">+ PNG</label><input class="sr" id="st-png" type="file" accept="image/png,image/webp">`;
   h += '</div>';
@@ -2296,10 +2368,13 @@ function bindStudio(){
   $$('[data-stdel]').forEach(b => b.onclick = () => { const i = +b.dataset.stdel, L = c.layers[i]; c.layers.splice(i, 1); STM.delete(L.id); IDB.del('st:mask:' + L.id); c.sel.li = Math.min(c.sel.li, c.layers.length - 1); save(); stRender(); });
   $$('[data-stvdel]').forEach(b => b.onclick = () => { const [li, vi] = b.dataset.stvdel.split('-').map(Number), L = c.layers[li], v = L.variants[vi]; L.variants.splice(vi, 1); STC.delete(v.id); STI.delete(v.id); IDB.del('st:img:' + v.id); L.cur = 0; save(); stRender(); });
   const nn = () => (($('#st-newname') || {}).value || '').trim();
-  const nc = $('#st-newcut'); if(nc) nc.onclick = () => { const L = stNewLayer(nn() || 'Часть ' + c.layers.length, 'cut'); const bi = c.layers.findIndex(l => l.base); c.layers.splice(bi + 1, 0, L); c.sel.li = bi + 1; c.tool = 'wand'; c.wand = 'add'; save(); stRender(); toast('Нажмите палочкой на нужную часть картинки'); };
+  const nc = $('#st-newcut'); if(nc) nc.onclick = async () => { const L = stNewLayer(nn() || 'Часть ' + c.layers.length, 'cut'); const bi = c.layers.findIndex(l => l.base); c.layers.splice(bi + 1, 0, L); c.sel.li = bi + 1; c.tool = 'wand'; c.wand = 'add'; save();
+    if(AI.status && AI.status.enabled && nn()){ ST.busy = `Ищу «${L.name}» на картинке…`; ST.msg = ''; stRender(); try{ await stAISegment(L); toast('Готово. Поправьте края кистью или ластиком, если нужно'); }catch(e){ ST.msg = 'Не получилось: ' + e.message + '. Нажмите на часть палочкой вручную.'; } ST.busy = false; stRender(); return; }
+    stRender(); toast('Нажмите палочкой на нужную часть картинки'); };
   const nd = $('#st-newdet'); if(nd) nd.onclick = () => { const L = stNewLayer(nn() || 'Детали', 'detail'); c.layers.push(L); c.sel.li = c.layers.length - 1; save(); stRender(); };
   const L = stLayer(), V = stVar();
   const addV = v => { L.variants.push(v); L.cur = L.variants.length - 1; save(); stRender(); };
+  const sg = $('#st-seg'); if(sg) sg.onclick = async () => { ST.busy = `Ищу «${L.name}» на картинке…`; ST.msg = ''; stRender(); try{ await stAISegment(L); }catch(e){ ST.msg = 'Не получилось: ' + e.message; } ST.busy = false; stRender(); };
   const ac = $('#st-addcol'); if(ac) ac.onclick = () => addV({id:'v' + uid(), kind:'recolor', label:'Цвет ' + L.variants.length, h:60*L.variants.length % 360 - 180, s:1, l:0, w:10});
   const a5 = $('#st-auto5'); if(a5) a5.onclick = () => { [-120, -60, 60, 120, 180].forEach((h, i) => L.variants.push({id:'v' + uid(), kind:'recolor', label:'Цвет ' + (L.variants.length), h, s:1, l:0, w:10})); save(); stRender(); };
   const af = $('#st-addfill'); if(af) af.onclick = () => { const col = '#' + Math.floor(Math.random()*0xffffff).toString(16).padStart(6, '0'); addV({id:'v' + uid(), kind:'fill', label:'Цвет ' + L.variants.length, c1:mixc(col, '#FFFFFF', .5), c2:mixc(col, '#FFFFFF', .75), w:10}); };
@@ -2337,7 +2412,7 @@ function stSend(){
   const c = stCfg(), d = S.draft; if(!c.layers.length) return;
   d.layers = c.layers.map(L => ({id:uid(), name:L.name, anim: L.base ? 'float' : 'none', variants: L.variants.map(v => ({id:uid(), kind:'img', label:v.label, w:v.w || 10,
     src: v.kind === 'none' ? null : (L.type === 'bg' ? renderVar(L, v).toDataURL('image/jpeg', .9) : renderVar(L, v).toDataURL('image/png'))}))}));
-  d.mode = 'layers'; d.legends = []; editIdx = null; rebuildDNA(); save(); toast('Слои перенесены в конструктор'); location.hash = 'create';
+  d.mode = 'layers'; d.legends = []; d.assembly = 'manual'; d.dna = []; d.wip = null; editIdx = null; rebuildDNA(); d.scrollTo = 'step-review'; save(); toast('Слои перенесены. Соберите NFT по одной или дособерите случайно'); location.hash = 'create';
 }
 async function bindStudioTab(){ $('#st-wrap').innerHTML = '<p class="note">Загружаю…</p>'; await aiStatus(); await stLoad();
   const ai = S.gen && S.gen.ai2; if(ai){ await Promise.all((ai.chars || []).map(ch => charImg(ch.id))); await Promise.all((ai.items || []).slice(-24).filter(it => !AIMG.get(it.id)).map(async it => { const s = await IDB.get(it.id); if(s) AIMG.set(it.id, s); })); }
