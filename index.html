@@ -504,7 +504,16 @@ const EN = {
   'Такой вариант уже есть':'That value already exists','Для этого признака нет готовых подсказок — впишите вариант сами':'No suggestions for this trait — type a value yourself','Впишите название признака':'Enter a trait name',
   'Добавьте варианты вручную: для этих признаков нет готовых подсказок':'Add values by hand: there are no suggestions for these traits','Все сочетания уже нарисованы. Добавьте варианты в признаки.':'All combinations are drawn already. Add values to the traits.',
   'Картинки ещё загружаются, подождите секунду':'Images are still loading, wait a second','NFT перенесены в конструктор':'NFTs sent to the builder',
-  'Волосы':'Hair','Закрытая коробка':'Mystery box','Какая NFT выпадет, узнаете после минта: порядок перемешан заранее и скрыт.':'You’ll see which NFT you get after minting: the order was shuffled in advance and kept hidden.',
+  'Волосы':'Hair','Убираю фон…':'Removing the background…','Сохраняю исходный фон отдельно…':'Saving the original background separately…',
+  'Нейросеть не убрала фон. Попробуйте ещё раз или выделите фон палочкой вручную.':'The AI didn’t remove the background. Try again or select the background with the wand by hand.','Исходный фон':'Original background',
+  'Отделить фон с помощью AI':'Remove background with AI','Работает на любой картинке: нейросеть убирает фон, а исходный фон сохраняет отдельным вариантом. 2 картинки, ≈ $0,08.':'Works on any picture: the AI removes the background and keeps the original background as a separate variant. 2 images, ≈ $0.08.',
+  'Отделить простой фон (без AI)':'Remove a plain background (no AI)','Бесплатно, но только для однотонного фона, как у персонажей.':'Free, but only for a plain single-colour background, like the characters have.',
+  'Подставлены ваши признаки из AI-коллекции. Нажмите AI — нейросеть нарисует каждый вариант отдельно.':'Your traits from the AI collection are filled in. Press AI and it draws each variant separately.',
+  'Как сделать слои — по шагам':'How to make layers — step by step','Отделите фон':'Remove the background','— кнопкой справа. Появятся слои «Фон» и «Тело».':'— with the button on the right. “Background” and “Body” layers appear.',
+  'Фоны':'Backgrounds','— выберите слой «Фон», в поле AI уже подставлены ваши фоны из признаков, нажмите AI. Или «+ Цвет фона».':'— select the “Background” layer; your backgrounds from the traits are already in the AI field, press AI. Or “+ Background colour”.',
+  'Части для перекраски':'Parts to recolour','— впишите «Волосы», нажмите «+ Часть (вырезать)», затем палочкой нажмите на волосы на картинке. Потом «Авто: 5 цветов».':'— type “Hair”, press “+ Part (cut out)”, then tap the hair in the picture with the wand. Then “Auto: 5 colours”.',
+  'Детали':'Details','— «+ Слой деталей», в поле AI уже ваши аксессуары, нажмите AI. Детали двигаются мышкой.':'— “+ Details layer”; your accessories are already in the AI field, press AI. Drag details with the mouse.',
+  '— справа «Перенести слои в конструктор».':'— “Send layers to the builder” on the right.','Закрытая коробка':'Mystery box','Какая NFT выпадет, узнаете после минта: порядок перемешан заранее и скрыт.':'You’ll see which NFT you get after minting: the order was shuffled in advance and kept hidden.',
   'Набор для маркетплейсов':'Marketplace kit','Это всё, что обычно просят площадки при листинге или верификации коллекции. По адресу контракта маркет сам прочитает все NFT, картинки и признаки.':'This is everything marketplaces usually ask for when listing or verifying a collection. From the contract address a marketplace reads all NFTs, images and traits itself.',
   'Адрес контракта':'Contract address','Стандарт':'Standard','Количество':'Supply','Демо: адрес условный. Ссылки на картинки и метаданные в Arweave появятся после настоящего запуска, сейчас в файлах они пустые (null).':'Demo: the address is simulated. Arweave links to images and metadata appear after a real launch; for now they are empty (null) in the files.',
   'Текст для заявки на листинг':'Text for the listing application','Скопировать текст':'Copy text','Скачать метаданные (JSON)':'Download metadata (JSON)','Скачать таблицу (CSV)':'Download table (CSV)',
@@ -2149,6 +2158,25 @@ async function stAutoCut(){
   const keep = c.layers.filter(l => l.type !== 'bg' && !l.base); c.layers = [B, F, ...keep];
   c.sel = {li:1, vi:0}; await stSaveMask(B); await stSaveMask(F); stDirty(); save();
 }
+function traitValues(re){ const ai = S.gen && S.gen.ai2, t = ai && ai.traits ? ai.traits.find(x => re.test(x.name)) : null; return t ? t.variants.map(v => v.label).filter(x => x && x !== 'none') : []; }
+const BG_RE = /back|фон/i, ACC_RE = /access|аксесс|головн|hat|шапк/i;
+async function stAICut(){
+  const c = stCfg(), orig = await IDB.get('st:src'); if(!orig) return;
+  ST.busy = 'Убираю фон…'; stRender();
+  const green = await aiImage('Remove the background: replace it with a perfectly flat solid pure green (#00FF00) background. Keep the character exactly the same: same pose, position, size, colours and details. No shadow on the background, no text.', [orig]);
+  ST.busy = 'Сохраняю исходный фон отдельно…'; stRender();
+  let bgOnly = null; try{ bgOnly = await aiImage('Remove the character completely and keep only the background scene, filling the empty area naturally. Same framing and style. No people, no text.', [orig]); }catch(e){}
+  const im = await loadImg(green), cv = canvas512(), x = cv.getContext('2d'); x.drawImage(im, 0, 0, SS, SS); const d = x.getImageData(0, 0, SS, SS), p = d.data;
+  for(let i=0;i<p.length;i+=4){ const gr = p[i+1] - Math.max(p[i], p[i+2]); if(gr > 60 && p[i+1] > 110){ p[i] = 0; p[i+1] = 255; p[i+2] = 0; } else if(gr > 20) p[i+1] = Math.max(p[i], p[i+2]); }
+  x.putImageData(d, 0, 0); await stSetSource(cv.toDataURL('image/png'));
+  const fg = new Uint8Array(SS*SS), s2 = STSRC.data; let n = 0;
+  for(let k=0;k<fg.length;k++){ const i = k*4, gr = s2[i+1] - Math.max(s2[i], s2[i+2]); fg[k] = gr > 60 && s2[i+1] > 110 ? 0 : 1; n += fg[k]; }
+  if(n / fg.length < .03 || n / fg.length > .97) ST.msg = 'Нейросеть не убрала фон. Попробуйте ещё раз или выделите фон палочкой вручную.';
+  const B = stNewLayer('Фон', 'bg'), F = stNewLayer('Тело', 'cut'); F.base = true; STM.set(F.id, fg); B.variants = [];
+  if(bgOnly) await stAddImgVariant(B, await shrink(bgOnly, SS, .9), 'Исходный фон', {x:.5, y:.5, s:1});
+  ['#F3D9C9','#CFEBEA','#DCE2F2','#F1E5B9'].forEach((col, i) => B.variants.push({id:'v' + uid(), kind:'fill', label:'Цвет ' + (i + 1), c1:col, c2:mixc(col, '#FFFFFF', .35), w:10}));
+  B.cur = 0; c.layers = [B, F]; c.sel = {li:1, vi:0}; await stSaveMask(B); await stSaveMask(F); stDirty(); ST.busy = false; save();
+}
 /* --- UI --- */
 const TOOLS = [['wand','Палочка'],['brush','Кисть'],['erase','Ластик'],['move','Двигать']];
 function vStudio(){
@@ -2164,6 +2192,14 @@ function vStudio(){
     </div>
     ${c.hasSrc ? `<div class="step" style="counter-increment:none">
       <div class="step-h"><h2 class="d-m">2. Слои</h2><button class="btn btn-sm btn-main" type="button" id="st-auto" style="margin-left:auto">${IC.spark} Сделать всё автоматически</button></div>
+      <details ${c.layers.length > 2 ? '' : 'open'} style="background:var(--bg);border-radius:14px;padding:12px 14px"><summary style="cursor:pointer;font-weight:700">Как сделать слои — по шагам</summary>
+        <ol style="margin:10px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:6px;color:var(--muted);font-size:14px">
+          <li><b style="color:var(--fg)">Отделите фон</b> — кнопкой справа. Появятся слои «Фон» и «Тело».</li>
+          <li><b style="color:var(--fg)">Фоны</b> — выберите слой «Фон», в поле AI уже подставлены ваши фоны из признаков, нажмите AI. Или «+ Цвет фона».</li>
+          <li><b style="color:var(--fg)">Части для перекраски</b> — впишите «Волосы», нажмите «+ Часть (вырезать)», затем палочкой нажмите на волосы на картинке. Потом «Авто: 5 цветов».</li>
+          <li><b style="color:var(--fg)">Детали</b> — «+ Слой деталей», в поле AI уже ваши аксессуары, нажмите AI. Детали двигаются мышкой.</li>
+          <li><b style="color:var(--fg)">Готово</b> — справа «Перенести слои в конструктор».</li>
+        </ol></details>
       <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
         <div style="flex:1 1 300px;max-width:512px;min-width:0">
           <canvas id="st-cv" width="${SS}" height="${SS}" style="width:100%;aspect-ratio:1/1;border-radius:14px;background:#E9E9EC;touch-action:none;cursor:${c.tool === 'move' ? 'grab' : 'crosshair'};display:block" role="img" aria-label="Редактор слоёв"></canvas>
@@ -2178,7 +2214,8 @@ function vStudio(){
           ${ST.busy ? `<p class="note">${esc(ST.busy === true ? 'Рисую…' : ST.busy)}</p>` : ''}${ST.msg ? `<p class="note warn">${esc(ST.msg)}</p>` : ''}
         </div>
         <div style="flex:1 1 260px;min-width:0;display:flex;flex-direction:column;gap:10px">
-          ${!c.layers.length ? `<button class="btn btn-line" type="button" id="st-cut">Отделить фон</button>` : ''}
+          ${!c.layers.length ? `${AI.status && AI.status.enabled ? `<button class="btn btn-main" type="button" id="st-aicut">${IC.spark} Отделить фон с помощью AI</button><p class="hint">Работает на любой картинке: нейросеть убирает фон, а исходный фон сохраняет отдельным вариантом. 2 картинки, ≈ $0,08.</p>` : ''}
+            <button class="btn btn-line" type="button" id="st-cut">Отделить простой фон (без AI)</button><p class="hint">Бесплатно, но только для однотонного фона, как у персонажей.</p>` : ''}
           <div class="layers">${c.layers.map((l, li) => ({l, li})).reverse().map(({l, li}) => `<div class="layer" style="${li === c.sel.li ? 'outline:1px solid var(--gold2)' : ''}">
             <div class="layer-h"><button class="btn btn-sm ${li === c.sel.li ? 'btn-main' : 'btn-line'}" type="button" data-stsel="${li}" style="min-height:34px">${li === c.sel.li ? 'Выбран' : 'Выбрать'}</button>
               <input class="input sm" data-stname="${li}" aria-label="Название слоя" value="${esc(l.name)}">
@@ -2205,7 +2242,9 @@ function stLayerTools(L){
   if(L.type === 'bg') h += `<button class="btn btn-sm btn-line" type="button" id="st-addfill">+ Цвет фона</button>`;
   if(L.type === 'detail') h += `<label class="btn btn-sm btn-line" for="st-png">+ PNG</label><input class="sr" id="st-png" type="file" accept="image/png,image/webp">`;
   h += '</div>';
-  if(L.type === 'detail' || L.type === 'bg') h += `<div class="inline"><input class="input sm" id="st-aitext" placeholder="${L.type === 'bg' ? 'Фон по-английски, например «neon city»' : 'Деталь по-английски, через запятую: red cap, sunglasses'}"><button class="btn btn-sm btn-main" type="button" id="st-ai" ${on && !ST.busy ? '' : 'disabled'}>${IC.spark} AI</button></div>${on ? '' : '<p class="hint">AI-детали работают на развёрнутом сайте с ключом OpenRouter.</p>'}`;
+  const pre = (L.type === 'bg' ? traitValues(BG_RE) : L.type === 'detail' ? traitValues(ACC_RE) : []).filter(v => !L.variants.some(x => x.label === v)).join(', ');
+  if(pre) h += `<p class="hint">Подставлены ваши признаки из AI-коллекции. Нажмите AI — нейросеть нарисует каждый вариант отдельно.</p>`;
+  if(L.type === 'detail' || L.type === 'bg') h += `<div class="inline"><input class="input sm" id="st-aitext" value="${esc(pre)}" placeholder="${L.type === 'bg' ? 'Фон по-английски, например «neon city»' : 'Деталь по-английски, через запятую: red cap, sunglasses'}"><button class="btn btn-sm btn-main" type="button" id="st-ai" ${on && !ST.busy ? '' : 'disabled'}>${IC.spark} AI</button></div>${on ? '' : '<p class="hint">AI-детали работают на развёрнутом сайте с ключом OpenRouter.</p>'}`;
   return h + '</div>';
 }
 function stDraw(){
@@ -2240,6 +2279,7 @@ function bindStudio(){
   $$('[data-stsrc]').forEach(b => b.onclick = async () => { const k = b.dataset.stsrc, src = AIMG.get(k) || await IDB.get(k); if(!src) return; await stSetSource(src); ST.msg = ''; stRender(); toast('Основа выбрана'); });
   const up = $('#st-up'); if(up) up.onchange = () => { const f = up.files && up.files[0]; if(!f) return; const rd = new FileReader(); rd.onload = async () => { await stSetSource(rd.result); ST.msg = ''; stRender(); }; rd.readAsDataURL(f); };
   const cut = $('#st-cut'); if(cut) cut.onclick = async () => { ST.msg = ''; await stAutoCut(); stRender(); };
+  const aic = $('#st-aicut'); if(aic) aic.onclick = async () => { ST.msg = ''; try{ await stAICut(); }catch(e){ ST.msg = 'Не получилось: ' + e.message; } ST.busy = false; stRender(); };
   const au = $('#st-auto'); if(au) au.onclick = stAutoAll;
   $$('[data-sttool]').forEach(b => b.onclick = () => { c.tool = b.dataset.sttool; save(); stRender(); });
   $$('[data-stwand]').forEach(b => b.onclick = () => { c.wand = b.dataset.stwand; save(); stRender(); });
@@ -2283,11 +2323,10 @@ function bindStudio(){
 }
 async function stAutoAll(){
   const c = stCfg(); ST.msg = '';
-  if(!c.layers.some(l => l.base)) await stAutoCut();
+  if(!c.layers.some(l => l.base)){ if(AI.status && AI.status.enabled){ try{ await stAICut(); }catch(e){ ST.msg = 'Не получилось: ' + e.message; ST.busy = false; stRender(); return; } } else await stAutoCut(); }
   let det = c.layers.find(l => l.type === 'detail'); if(!det){ det = stNewLayer('Детали', 'detail'); c.layers.push(det); }
   const on = AI.status && AI.status.enabled, ai = S.gen && S.gen.ai2;
-  const accTrait = ai && ai.traits ? ai.traits.find(t => /access|аксесс|головн|hat|шапк/i.test(t.name)) : null;
-  const items = accTrait ? accTrait.variants.map(v => v.label).filter(x => x && x !== 'none').slice(0, 4) : ['sunglasses', 'red baseball cap', 'golden crown', 'headphones'];
+  const tv = traitValues(ACC_RE), items = tv.length ? tv.slice(0, 6) : ['sunglasses', 'red baseball cap', 'golden crown', 'headphones'];
   c.sel.li = c.layers.indexOf(det); save(); stRender();
   if(!on){ ST.msg = 'Фон и тело готовы. AI-детали добавятся на развёрнутом сайте с ключом OpenRouter, а пока можно загрузить PNG.'; stRender(); return; }
   for(let i=0;i<items.length;i++){ ST.busy = `Рисую детали… ${i + 1} из ${items.length}`; stRender(); try{ if(!det.variants.some(v => v.label === items[i])) await stAIDetail(det, items[i]); }catch(e){ ST.msg = 'Не получилось: ' + e.message; } save(); }
