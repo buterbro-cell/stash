@@ -24,6 +24,12 @@ python3 -m http.server 8000
 
 Demo data is stored in the browser's `localStorage`.
 
+### Deploy
+
+- **Buildpack hosts** (Northflank buildpack, Heroku-style): `npm start` serves the site on `$PORT` (default 8080).
+- **Docker** (Northflank Dockerfile build, Fly.io, etc.): the `Dockerfile` serves it with nginx on port **8080**.
+- **GitHub Pages / Vercel / Netlify**: no build step, publish the repository root.
+
 ## Roadmap
 
 1. NEAR smart contracts: a collection factory and a NEP-171 NFT contract with per-token token balances (NEP-141), withdraw lock while listed, immutable code.
