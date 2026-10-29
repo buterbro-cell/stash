@@ -2202,6 +2202,7 @@ function stLayerTools(L){
 }
 function stDraw(){
   const cv = $('#st-cv'); if(!cv) return; const c = stCfg(), x = cv.getContext('2d'); compose(x, null, SS);
+  if(!c.layers.length && STSRC) x.putImageData(STSRC, 0, 0);
   const L = stLayer(), V = stVar();
   if(L && (L.type === 'cut' || L.type === 'bg') && c.tool !== 'move'){ const m = STM.get(L.id); if(m){ const o = x.getImageData(0, 0, SS, SS), p = o.data;
     for(let k=0;k<m.length;k++) if(m[k]){ const i = k*4; p[i] = (p[i] + 232) >> 1; p[i+1] = (p[i+1] + 192) >> 1; p[i+2] = (p[i+2] + 120) >> 1; } x.putImageData(o, 0, 0); } }
