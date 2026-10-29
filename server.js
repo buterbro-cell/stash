@@ -28,6 +28,7 @@ function quota(ip){
   return Math.max(0, Math.min(DAILY - total, PER_IP - (perIp.get(ip) || 0)));
 }
 function spend(ip){ total++; perIp.set(ip, (perIp.get(ip) || 0) + 1); }
+function refund(ip){ total = Math.max(0, total - 1); perIp.set(ip, Math.max(0, (perIp.get(ip) || 1) - 1)); }
 const clientIp = req => String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
 
 function send(res, code, obj){ res.writeHead(code, {'Content-Type':'application/json', 'Cache-Control':'no-store'}); res.end(JSON.stringify(obj)); }
@@ -70,7 +71,7 @@ async function api(req, res, p){
     if(!prompt) return send(res, 400, {error:'Empty prompt'});
     spend(ip);
     try{ const out = await openrouter(prompt, image); return send(res, 200, {image:out, left:quota(ip)}); }
-    catch(e){ console.error('AI error:', e.message); return send(res, 502, {error:String(e.message).slice(0, 200)}); }
+    catch(e){ refund(ip); console.error('AI error:', e.message); return send(res, 502, {error:String(e.message).slice(0, 300), left:quota(ip)}); }
   }
   return send(res, 404, {error:'Not found'});
 }
